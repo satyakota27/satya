@@ -12,6 +12,11 @@ class User < ApplicationRecord
 
   belongs_to :tenant, optional: true
 
+  # Permission associations
+  has_many :user_permissions, dependent: :destroy
+  has_many :sub_functionalities, through: :user_permissions
+  has_many :functionalities, -> { distinct }, through: :sub_functionalities
+
   # Scope for queries - super admins bypass tenant scoping
   scope :without_tenant_scope, -> { unscoped }
   
@@ -27,6 +32,31 @@ class User < ApplicationRecord
 
   # Ensure tenant is always set correctly before save
   before_save :ensure_tenant_setting
+
+  # Permission helper methods
+  def has_permission?(sub_functionality_code)
+    return true if super_admin? # Super admins have all permissions
+    return false if tenant_admin? # Tenant admins don't use this method (they manage permissions)
+
+    sub_functionalities.exists?(code: sub_functionality_code, active: true)
+  end
+
+  def has_functionality?(functionality_code)
+    return true if super_admin? # Super admins have all permissions
+    return false if tenant_admin? # Tenant admins don't use this method
+
+    functionalities.exists?(code: functionality_code, active: true)
+  end
+
+  def permitted_sub_functionalities
+    return [] if super_admin? || tenant_admin?
+    sub_functionalities.active.pluck(:code)
+  end
+
+  def permitted_functionalities
+    return [] if super_admin? || tenant_admin?
+    functionalities.active.pluck(:code).uniq
+  end
 
   private
 

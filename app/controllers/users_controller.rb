@@ -18,11 +18,17 @@ class UsersController < ApplicationController
 
   def show
     authorize! :read, @user
+    # Load user's permissions for display
+    @user_permissions = @user.user_permissions.includes(sub_functionality: :functionality)
   end
 
   def new
     @user = User.new
     @tenants = current_user.super_admin? ? Tenant.all : [current_user.tenant]
+    # Load functionalities only for tenant admins (they assign permissions)
+    if current_user.tenant_admin?
+      @functionalities = Functionality.active.ordered.includes(:sub_functionalities)
+    end
     authorize! :create, User
   end
 
@@ -44,9 +50,18 @@ class UsersController < ApplicationController
     end
 
     if @user.save
+      # Assign functionalities only if tenant admin is creating the user
+      if current_user.tenant_admin? && user_params[:sub_functionality_ids].present?
+        sub_functionality_ids = user_params[:sub_functionality_ids].reject(&:blank?).map(&:to_i)
+        @user.sub_functionality_ids = sub_functionality_ids
+      end
+      
       redirect_to @user, notice: 'User was successfully created.'
     else
       @tenants = current_user.super_admin? ? Tenant.all : [current_user.tenant]
+      if current_user.tenant_admin?
+        @functionalities = Functionality.active.ordered.includes(:sub_functionalities)
+      end
       render :new, status: :unprocessable_entity
     end
   end
@@ -54,6 +69,14 @@ class UsersController < ApplicationController
   def edit
     authorize! :update, @user
     @tenants = current_user.super_admin? ? Tenant.all : [current_user.tenant]
+    # Load functionalities only for tenant admins (they assign permissions)
+    if current_user.tenant_admin?
+      @functionalities = Functionality.active.ordered.includes(:sub_functionalities)
+      # Validate user belongs to tenant admin's tenant
+      unless @user.tenant_id == current_user.tenant_id
+        raise ActiveRecord::RecordNotFound
+      end
+    end
   end
 
   def update
@@ -79,9 +102,23 @@ class UsersController < ApplicationController
     end
 
     if @user.update(user_update_params)
+      # Update functionalities only if tenant admin is updating the user
+      if current_user.tenant_admin?
+        # Validate user belongs to tenant admin's tenant
+        unless @user.tenant_id == current_user.tenant_id
+          raise ActiveRecord::RecordNotFound
+        end
+        # Update sub-functionality assignments (even if empty array, to clear permissions)
+        sub_functionality_ids = (user_params[:sub_functionality_ids] || []).reject(&:blank?).map(&:to_i)
+        @user.sub_functionality_ids = sub_functionality_ids
+      end
+      
       redirect_to @user, notice: 'User was successfully updated.'
     else
       @tenants = current_user.super_admin? ? Tenant.all : [current_user.tenant]
+      if current_user.tenant_admin?
+        @functionalities = Functionality.active.ordered.includes(:sub_functionalities)
+      end
       render :edit, status: :unprocessable_entity
     end
   end
@@ -110,6 +147,11 @@ class UsersController < ApplicationController
   end
 
   def user_params
-    params.require(:user).permit(:email, :password, :password_confirmation, :role, :tenant_id)
+    permitted_params = [:email, :password, :password_confirmation, :role, :tenant_id]
+    # Only tenant admins can assign functionalities
+    if current_user.tenant_admin?
+      permitted_params << { sub_functionality_ids: [] }
+    end
+    params.require(:user).permit(permitted_params)
   end
 end

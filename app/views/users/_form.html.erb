@@ -84,6 +84,72 @@
           <%= form.hidden_field :role, value: 'user' %>
         <% end %>
 
+        <% if current_user.tenant_admin? && @functionalities.present? %>
+          <div class="pt-4 border-t border-gray-200">
+            <h3 class="text-lg font-medium text-gray-900 mb-4">User Permissions</h3>
+            <p class="text-sm text-gray-500 mb-4">Select the functionalities and sub-functionalities this user should have access to.</p>
+            
+            <div id="functionality-selection" class="space-y-4">
+              <% @functionalities.each do |functionality| %>
+                <div class="border border-gray-200 rounded-lg overflow-hidden">
+                  <div class="bg-gray-50 px-4 py-3 border-b border-gray-200">
+                    <div class="flex items-center justify-between">
+                      <label class="flex items-center">
+                        <input type="checkbox" 
+                               class="functionality-select-all h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded" 
+                               data-functionality-id="<%= functionality.id %>"
+                               id="functionality_<%= functionality.id %>_select_all">
+                        <span class="ml-2 text-sm font-medium text-gray-900"><%= functionality.name %></span>
+                      </label>
+                      <button type="button" 
+                              class="functionality-toggle text-sm text-indigo-600 hover:text-indigo-900"
+                              data-functionality-id="<%= functionality.id %>">
+                        <span class="expand-text">Expand</span>
+                        <span class="collapse-text hidden">Collapse</span>
+                      </button>
+                    </div>
+                    <% if functionality.description.present? %>
+                      <p class="mt-1 text-xs text-gray-500"><%= functionality.description %></p>
+                    <% end %>
+                  </div>
+                  
+                  <div class="functionality-sub-items hidden px-4 py-3 bg-white" data-functionality-id="<%= functionality.id %>">
+                    <div class="space-y-2">
+                      <% functionality.sub_functionalities.active.ordered.each do |sub_functionality| %>
+                        <div class="flex items-start">
+                          <div class="flex items-center h-5">
+                            <%= check_box_tag "user[sub_functionality_ids][]", 
+                                sub_functionality.id, 
+                                @user.persisted? && @user.sub_functionality_ids.include?(sub_functionality.id),
+                                { class: "sub-functionality-checkbox h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded",
+                                  id: "user_sub_functionality_ids_#{sub_functionality.id}",
+                                  data: { functionality_id: functionality.id } } %>
+                          </div>
+                          <div class="ml-3 text-sm">
+                            <%= label_tag "user_sub_functionality_ids_#{sub_functionality.id}", 
+                                sub_functionality.name, 
+                                class: "font-medium text-gray-700 cursor-pointer" %>
+                            <% if sub_functionality.description.present? %>
+                              <p class="text-xs text-gray-500 mt-0.5"><%= sub_functionality.description %></p>
+                            <% end %>
+                            <% if sub_functionality.screen.present? %>
+                              <p class="text-xs text-gray-400 mt-0.5">Screen: <%= sub_functionality.screen %></p>
+                            <% end %>
+                          </div>
+                        </div>
+                      <% end %>
+                    </div>
+                  </div>
+                </div>
+              <% end %>
+            </div>
+            
+            <div class="mt-4 text-sm text-gray-600">
+              <span id="selected-count">0</span> permission(s) selected
+            </div>
+          </div>
+        <% end %>
+
         <div class="flex items-center justify-end space-x-3 pt-4 border-t border-gray-200">
           <%= link_to "Cancel", @user.persisted? ? user_path(@user) : users_path, 
               class: "bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors" %>

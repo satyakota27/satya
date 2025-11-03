@@ -61,6 +61,39 @@
     </div>
   </div>
 
+  <% if @user.sub_functionalities.any? %>
+    <div class="bg-white shadow overflow-hidden sm:rounded-lg mb-6">
+      <div class="px-4 py-5 sm:px-6">
+        <h3 class="text-lg leading-6 font-medium text-gray-900">User Permissions</h3>
+        <p class="mt-1 text-sm text-gray-500">Functionalities and sub-functionalities assigned to this user.</p>
+      </div>
+      <div class="border-t border-gray-200">
+        <div class="px-4 py-5 sm:px-6">
+          <div class="space-y-4">
+            <% @user.functionalities.ordered.each do |functionality| %>
+              <div class="border border-gray-200 rounded-lg p-4">
+                <h4 class="text-sm font-semibold text-gray-900 mb-2"><%= functionality.name %></h4>
+                <ul class="space-y-1">
+                  <% @user.sub_functionalities.where(functionality: functionality).ordered.each do |sub_functionality| %>
+                    <li class="text-sm text-gray-600 flex items-center">
+                      <svg class="h-4 w-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                      </svg>
+                      <%= sub_functionality.name %>
+                      <% if sub_functionality.screen.present? %>
+                        <span class="ml-2 text-xs text-gray-400">(<%= sub_functionality.screen %>)</span>
+                      <% end %>
+                    </li>
+                  <% end %>
+                </ul>
+              </div>
+            <% end %>
+          </div>
+        </div>
+      </div>
+    </div>
+  <% end %>
+
   <div class="mt-6">
     <%= link_to users_path, class: "inline-flex items-center text-sm font-medium text-gray-700 hover:text-gray-900" do %>
       <svg class="mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

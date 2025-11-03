@@ -10,9 +10,38 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_11_03_182016) do
+ActiveRecord::Schema[8.0].define(version: 2025_11_03_185757) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
+
+  create_table "functionalities", force: :cascade do |t|
+    t.string "name", null: false
+    t.string "code", null: false
+    t.text "description"
+    t.boolean "active", default: true, null: false
+    t.integer "display_order", default: 0
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["active"], name: "index_functionalities_on_active"
+    t.index ["code"], name: "index_functionalities_on_code", unique: true
+    t.index ["display_order"], name: "index_functionalities_on_display_order"
+  end
+
+  create_table "sub_functionalities", force: :cascade do |t|
+    t.bigint "functionality_id", null: false
+    t.string "name", null: false
+    t.string "code", null: false
+    t.text "description"
+    t.string "screen"
+    t.boolean "active", default: true, null: false
+    t.integer "display_order", default: 0
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["active"], name: "index_sub_functionalities_on_active"
+    t.index ["display_order"], name: "index_sub_functionalities_on_display_order"
+    t.index ["functionality_id", "code"], name: "index_sub_functionalities_on_functionality_id_and_code", unique: true
+    t.index ["functionality_id"], name: "index_sub_functionalities_on_functionality_id"
+  end
 
   create_table "subscriptions", force: :cascade do |t|
     t.bigint "tenant_id", null: false
@@ -30,6 +59,16 @@ ActiveRecord::Schema[8.0].define(version: 2025_11_03_182016) do
     t.index ["subdomain"], name: "index_tenants_on_subdomain", unique: true
   end
 
+  create_table "user_permissions", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.bigint "sub_functionality_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["sub_functionality_id"], name: "index_user_permissions_on_sub_functionality_id"
+    t.index ["user_id", "sub_functionality_id"], name: "index_user_permissions_on_user_and_sub_functionality", unique: true
+    t.index ["user_id"], name: "index_user_permissions_on_user_id"
+  end
+
   create_table "users", force: :cascade do |t|
     t.string "email", default: "", null: false
     t.string "encrypted_password", default: "", null: false
@@ -45,6 +84,9 @@ ActiveRecord::Schema[8.0].define(version: 2025_11_03_182016) do
     t.index ["tenant_id"], name: "index_users_on_tenant_id"
   end
 
+  add_foreign_key "sub_functionalities", "functionalities"
   add_foreign_key "subscriptions", "tenants"
+  add_foreign_key "user_permissions", "sub_functionalities"
+  add_foreign_key "user_permissions", "users"
   add_foreign_key "users", "tenants"
 end
