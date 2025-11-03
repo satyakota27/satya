@@ -2,7 +2,13 @@ class TenantsController < ApplicationController
   before_action :set_tenant, only: [:show, :edit, :update, :destroy]
 
   def index
-    @tenants = Tenant.all
+    # Only super admins can see all tenants
+    # Tenant admins and regular users only see their own tenant
+    if current_user.super_admin?
+      @tenants = Tenant.all
+    else
+      @tenants = [current_user.tenant].compact
+    end
     authorize! :read, Tenant
   end
 
@@ -51,7 +57,15 @@ class TenantsController < ApplicationController
   private
 
   def set_tenant
+    # Super admins can access any tenant
+    # Others can only access their own tenant
     @tenant = Tenant.find(params[:id])
+    
+    unless current_user.super_admin?
+      unless @tenant.id == current_user.tenant_id
+        raise ActiveRecord::RecordNotFound
+      end
+    end
   end
 
   def tenant_params

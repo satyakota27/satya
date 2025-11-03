@@ -2,12 +2,16 @@ class UsersController < ApplicationController
   before_action :set_user, only: [:show, :edit, :update, :destroy]
 
   def index
+    # acts_as_tenant automatically scopes queries based on ActsAsTenant.current_tenant
+    # Super admins see all users (no tenant scoping)
+    # Others see only users in their tenant
     if current_user.super_admin?
-      @users = User.all
-    elsif current_user.tenant_admin?
-      @users = current_user.tenant.users
+      ActsAsTenant.with_tenant(nil) do
+        @users = User.all
+      end
     else
-      @users = [current_user]
+      # For tenant admins and regular users, acts_as_tenant will automatically scope
+      @users = current_user.tenant_admin? ? User.all : [current_user]
     end
     authorize! :read, User
   end
@@ -91,7 +95,18 @@ class UsersController < ApplicationController
   private
 
   def set_user
-    @user = User.find(params[:id])
+    # Super admins can access any user, others are limited to their tenant
+    if current_user.super_admin?
+      ActsAsTenant.with_tenant(nil) do
+        @user = User.find(params[:id])
+      end
+    else
+      @user = User.find(params[:id])
+      # Additional check - ensure user belongs to current user's tenant
+      unless @user.tenant_id == current_user.tenant_id || current_user.super_admin?
+        raise ActiveRecord::RecordNotFound
+      end
+    end
   end
 
   def user_params
