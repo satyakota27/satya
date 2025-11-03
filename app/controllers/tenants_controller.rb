@@ -1,0 +1,60 @@
+class TenantsController < ApplicationController
+  before_action :set_tenant, only: [:show, :edit, :update, :destroy]
+
+  def index
+    @tenants = Tenant.all
+    authorize! :read, Tenant
+  end
+
+  def show
+    authorize! :read, @tenant
+    @users = @tenant.users
+    @subscription = @tenant.current_subscription
+  end
+
+  def new
+    @tenant = Tenant.new
+    authorize! :create, Tenant
+  end
+
+  def create
+    @tenant = Tenant.new(tenant_params)
+    authorize! :create, @tenant
+
+    if @tenant.save
+      redirect_to @tenant, notice: 'Tenant was successfully created.'
+    else
+      render :new, status: :unprocessable_entity
+    end
+  end
+
+  def edit
+    authorize! :update, @tenant
+  end
+
+  def update
+    authorize! :update, @tenant
+
+    if @tenant.update(tenant_params)
+      redirect_to @tenant, notice: 'Tenant was successfully updated.'
+    else
+      render :edit, status: :unprocessable_entity
+    end
+  end
+
+  def destroy
+    authorize! :destroy, @tenant
+    @tenant.destroy
+    redirect_to tenants_path, notice: 'Tenant was successfully deleted.'
+  end
+
+  private
+
+  def set_tenant
+    @tenant = Tenant.find(params[:id])
+  end
+
+  def tenant_params
+    params.require(:tenant).permit(:name, :subdomain)
+  end
+end

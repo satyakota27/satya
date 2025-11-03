@@ -1,0 +1,17 @@
+<div class="px-4 sm:px-0">
+  <div class="mb-6">
+    <h1 class="text-3xl font-bold text-gray-900">New Tenant</h1>
+    <p class="mt-1 text-sm text-gray-500">Create a new tenant account with a unique subdomain.</p>
+  </div>
+
+  <%= render "form", tenant: @tenant %>
+
+  <div class="mt-6">
+    <%= link_to tenants_path, class: "inline-flex items-center text-sm font-medium text-gray-700 hover:text-gray-900" do %>
+      <svg class="mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+      </svg>
+      Back to Tenants
+    <% end %>
+  </div>
+</div>

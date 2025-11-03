@@ -1,0 +1,116 @@
+<div class="px-4 sm:px-0">
+  <div class="sm:flex sm:items-center mb-6">
+    <div class="sm:flex-auto">
+      <h1 class="text-3xl font-bold text-gray-900"><%= @tenant.name %></h1>
+      <p class="mt-1 text-sm text-gray-500">Tenant details and associated users</p>
+    </div>
+    <div class="mt-4 sm:mt-0 sm:ml-16 sm:flex-none flex space-x-3">
+      <% if can? :update, @tenant %>
+        <%= link_to edit_tenant_path(@tenant), class: "inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors" do %>
+          Edit
+        <% end %>
+      <% end %>
+      <% if can? :destroy, @tenant %>
+        <%= link_to tenant_path(@tenant), method: :delete, 
+            data: { confirm: "Are you sure you want to delete this tenant?" }, 
+            class: "inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors" do %>
+          Delete
+        <% end %>
+      <% end %>
+    </div>
+  </div>
+
+  <div class="bg-white shadow overflow-hidden sm:rounded-lg mb-6">
+    <div class="px-4 py-5 sm:px-6">
+      <h3 class="text-lg leading-6 font-medium text-gray-900">Tenant Information</h3>
+      <p class="mt-1 max-w-2xl text-sm text-gray-500">Details about this tenant account.</p>
+    </div>
+    <div class="border-t border-gray-200">
+      <dl>
+        <div class="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+          <dt class="text-sm font-medium text-gray-500">Name</dt>
+          <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2"><%= @tenant.name %></dd>
+        </div>
+        <div class="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+          <dt class="text-sm font-medium text-gray-500">Subdomain</dt>
+          <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2"><%= @tenant.subdomain %></dd>
+        </div>
+        <div class="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+          <dt class="text-sm font-medium text-gray-500">Created</dt>
+          <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2"><%= @tenant.created_at.strftime("%B %d, %Y at %I:%M %p") %></dd>
+        </div>
+        <div class="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+          <dt class="text-sm font-medium text-gray-500">Subscription</dt>
+          <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+            <% if @subscription %>
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                <%= @subscription.tier.capitalize %>
+              </span>
+              <span class="ml-2 text-gray-500 text-xs">Created <%= @subscription.created_at.strftime("%B %d, %Y") %></span>
+            <% else %>
+              <span class="text-gray-400">No active subscription</span>
+            <% end %>
+          </dd>
+        </div>
+      </dl>
+    </div>
+  </div>
+
+  <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+    <div class="px-4 py-5 sm:px-6 flex items-center justify-between">
+      <div>
+        <h3 class="text-lg leading-6 font-medium text-gray-900">Users</h3>
+        <p class="mt-1 text-sm text-gray-500">A list of all users associated with this tenant.</p>
+      </div>
+      <div class="text-sm font-medium text-gray-500">
+        <%= pluralize(@users.count, 'user') %>
+      </div>
+    </div>
+    <% if @users.any? %>
+      <ul class="divide-y divide-gray-200">
+        <% @users.each do |user| %>
+          <li>
+            <div class="px-4 py-4 sm:px-6 hover:bg-gray-50 transition-colors">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                  <div class="flex-shrink-0 h-10 w-10 rounded-full bg-green-100 flex items-center justify-center">
+                    <span class="text-green-600 font-semibold"><%= user.email.first.upcase %></span>
+                  </div>
+                  <div class="ml-4">
+                    <div class="text-sm font-medium text-gray-900"><%= user.email %></div>
+                    <div class="text-sm text-gray-500">
+                      <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium <%= 
+                        user.role == 'tenant_admin' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'
+                      %>">
+                        <%= user.role.humanize %>
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <div class="text-sm text-gray-500">
+                  <%= user.created_at.strftime("%B %d, %Y") %>
+                </div>
+                <%= link_to user_path(user), class: "text-indigo-600 hover:text-indigo-900 text-sm font-medium" do %>
+                  View →
+                <% end %>
+              </div>
+            </div>
+          </li>
+        <% end %>
+      </ul>
+    <% else %>
+      <div class="px-4 py-12 sm:px-6 text-center">
+        <p class="text-sm text-gray-500">No users for this tenant.</p>
+      </div>
+    <% end %>
+  </div>
+
+  <div class="mt-6">
+    <%= link_to tenants_path, class: "inline-flex items-center text-sm font-medium text-gray-700 hover:text-gray-900" do %>
+      <svg class="mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+      </svg>
+      Back to Tenants
+    <% end %>
+  </div>
+</div>
