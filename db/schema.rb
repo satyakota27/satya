@@ -10,9 +10,10 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_11_03_185757) do
+ActiveRecord::Schema[8.0].define(version: 2025_12_31_080454) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
+  enable_extension "pg_trgm"
 
   create_table "functionalities", force: :cascade do |t|
     t.string "name", null: false
@@ -25,6 +26,34 @@ ActiveRecord::Schema[8.0].define(version: 2025_11_03_185757) do
     t.index ["active"], name: "index_functionalities_on_active"
     t.index ["code"], name: "index_functionalities_on_code", unique: true
     t.index ["display_order"], name: "index_functionalities_on_display_order"
+  end
+
+  create_table "material_bom_components", force: :cascade do |t|
+    t.bigint "material_id", null: false
+    t.bigint "component_material_id", null: false
+    t.decimal "quantity", precision: 10, scale: 2, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["component_material_id"], name: "index_material_bom_components_on_component_material_id"
+    t.index ["material_id"], name: "index_material_bom_components_on_material_id"
+  end
+
+  create_table "materials", force: :cascade do |t|
+    t.bigint "tenant_id", null: false
+    t.string "material_code"
+    t.text "description"
+    t.string "state", default: "draft", null: false
+    t.bigint "procurement_unit_id"
+    t.bigint "sale_unit_id"
+    t.boolean "has_bom", default: false, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["material_code"], name: "index_materials_on_material_code"
+    t.index ["procurement_unit_id"], name: "index_materials_on_procurement_unit_id"
+    t.index ["sale_unit_id"], name: "index_materials_on_sale_unit_id"
+    t.index ["state"], name: "index_materials_on_state"
+    t.index ["tenant_id", "material_code"], name: "index_materials_on_tenant_id_and_material_code", unique: true
+    t.index ["tenant_id"], name: "index_materials_on_tenant_id"
   end
 
   create_table "sub_functionalities", force: :cascade do |t|
@@ -59,6 +88,17 @@ ActiveRecord::Schema[8.0].define(version: 2025_11_03_185757) do
     t.index ["subdomain"], name: "index_tenants_on_subdomain", unique: true
   end
 
+  create_table "unit_of_measurements", force: :cascade do |t|
+    t.bigint "tenant_id", null: false
+    t.string "name", null: false
+    t.string "abbreviation", null: false
+    t.boolean "active", default: true, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["tenant_id", "name"], name: "index_unit_of_measurements_on_tenant_id_and_name", unique: true
+    t.index ["tenant_id"], name: "index_unit_of_measurements_on_tenant_id"
+  end
+
   create_table "user_permissions", force: :cascade do |t|
     t.bigint "user_id", null: false
     t.bigint "sub_functionality_id", null: false
@@ -84,8 +124,14 @@ ActiveRecord::Schema[8.0].define(version: 2025_11_03_185757) do
     t.index ["tenant_id"], name: "index_users_on_tenant_id"
   end
 
+  add_foreign_key "material_bom_components", "materials"
+  add_foreign_key "material_bom_components", "materials", column: "component_material_id"
+  add_foreign_key "materials", "tenants"
+  add_foreign_key "materials", "unit_of_measurements", column: "procurement_unit_id"
+  add_foreign_key "materials", "unit_of_measurements", column: "sale_unit_id"
   add_foreign_key "sub_functionalities", "functionalities"
   add_foreign_key "subscriptions", "tenants"
+  add_foreign_key "unit_of_measurements", "tenants"
   add_foreign_key "user_permissions", "sub_functionalities"
   add_foreign_key "user_permissions", "users"
   add_foreign_key "users", "tenants"

@@ -1,0 +1,130 @@
+<div>
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 sm:mb-6 gap-4">
+    <div class="flex-1">
+      <h1 class="text-2xl sm:text-3xl font-bold text-gray-900">Material Details</h1>
+      <p class="mt-1 sm:mt-2 text-sm text-gray-500">View material information and BOM components.</p>
+    </div>
+    <div class="flex flex-wrap gap-2 sm:flex-nowrap sm:flex-shrink-0">
+      <% if can? :update, @material %>
+        <%= link_to edit_material_path(@material), class: "inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500" do %>
+          Edit
+        <% end %>
+      <% end %>
+      <% if can?(:approve, @material) && @material.draft? %>
+        <%= button_to approve_material_path(@material), method: :post, 
+            class: "inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500" do %>
+          Approve
+        <% end %>
+      <% end %>
+      <%= link_to materials_path, class: "inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50" do %>
+        Back to List
+      <% end %>
+    </div>
+  </div>
+
+  <div class="bg-white shadow sm:rounded-lg">
+    <div class="px-4 py-5 sm:p-6">
+      <dl class="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2">
+        <div>
+          <dt class="text-sm font-medium text-gray-500">Material Code</dt>
+          <dd class="mt-1 text-sm text-gray-900">
+            <%= @material.material_code || '<span class="text-gray-400">Not assigned (draft)</span>'.html_safe %>
+          </dd>
+        </div>
+        <div>
+          <dt class="text-sm font-medium text-gray-500">State</dt>
+          <dd class="mt-1">
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium <%= 
+              @material.approved? ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+            %>">
+              <%= @material.state.humanize %>
+            </span>
+          </dd>
+        </div>
+        <div class="sm:col-span-2">
+          <dt class="text-sm font-medium text-gray-500">Description</dt>
+          <dd class="mt-1 text-sm text-gray-900"><%= @material.description %></dd>
+        </div>
+        <div>
+          <dt class="text-sm font-medium text-gray-500">Procurement Unit</dt>
+          <dd class="mt-1 text-sm text-gray-900">
+            <%= @material.procurement_unit ? @material.procurement_unit.display_name : '<span class="text-gray-400">Not set</span>'.html_safe %>
+          </dd>
+        </div>
+        <div>
+          <dt class="text-sm font-medium text-gray-500">Sale Unit</dt>
+          <dd class="mt-1 text-sm text-gray-900">
+            <%= @material.sale_unit ? @material.sale_unit.display_name : '<span class="text-gray-400">Not set</span>'.html_safe %>
+          </dd>
+        </div>
+        <div>
+          <dt class="text-sm font-medium text-gray-500">Has BOM</dt>
+          <dd class="mt-1 text-sm text-gray-900">
+            <%= @material.has_bom ? 'Yes' : 'No' %>
+          </dd>
+        </div>
+        <div>
+          <dt class="text-sm font-medium text-gray-500">Created At</dt>
+          <dd class="mt-1 text-sm text-gray-900"><%= @material.created_at.strftime("%B %d, %Y at %I:%M %p") %></dd>
+        </div>
+        <div>
+          <dt class="text-sm font-medium text-gray-500">Updated At</dt>
+          <dd class="mt-1 text-sm text-gray-900"><%= @material.updated_at.strftime("%B %d, %Y at %I:%M %p") %></dd>
+        </div>
+      </dl>
+
+      <% if @material.has_bom && @material.material_bom_components.any? %>
+        <div class="mt-8 pt-8 border-t border-gray-200">
+          <h3 class="text-lg font-medium text-gray-900 mb-4">BOM Components</h3>
+          <!-- Mobile: Card layout -->
+          <div class="block sm:hidden space-y-3">
+            <% @material.material_bom_components.includes(:component_material).each do |bom_component| %>
+              <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                <div class="mb-2">
+                  <span class="text-xs font-medium text-gray-500">Material Code</span>
+                  <p class="text-sm font-medium text-gray-900"><%= bom_component.component_material.material_code %></p>
+                </div>
+                <div class="mb-2">
+                  <span class="text-xs font-medium text-gray-500">Description</span>
+                  <p class="text-sm text-gray-700"><%= bom_component.component_material.description %></p>
+                </div>
+                <div>
+                  <span class="text-xs font-medium text-gray-500">Quantity</span>
+                  <p class="text-sm text-gray-700"><%= bom_component.quantity %></p>
+                </div>
+              </div>
+            <% end %>
+          </div>
+          <!-- Desktop: Table layout -->
+          <div class="hidden sm:block overflow-hidden shadow ring-1 ring-black ring-opacity-5 sm:rounded-md">
+            <table class="min-w-full divide-y divide-gray-300">
+              <thead class="bg-gray-50">
+                <tr>
+                  <th class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6">Material Code</th>
+                  <th class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Description</th>
+                  <th class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Quantity</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-200 bg-white">
+                <% @material.material_bom_components.includes(:component_material).each do |bom_component| %>
+                  <tr>
+                    <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6">
+                      <%= bom_component.component_material.material_code %>
+                    </td>
+                    <td class="px-3 py-4 text-sm text-gray-500">
+                      <%= bom_component.component_material.description %>
+                    </td>
+                    <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                      <%= bom_component.quantity %>
+                    </td>
+                  </tr>
+                <% end %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div>
+

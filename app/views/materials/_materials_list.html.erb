@@ -1,0 +1,73 @@
+<% if materials.any? %>
+  <div class="bg-white shadow overflow-hidden sm:rounded-md">
+    <ul class="divide-y divide-gray-200" id="materials-list">
+      <% materials.each do |material| %>
+        <li>
+          <div class="px-4 py-4 sm:px-6 hover:bg-gray-50 transition-colors">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div class="flex items-start sm:items-center flex-1 min-w-0">
+                <div class="flex-shrink-0">
+                  <div class="h-10 w-10 rounded-lg bg-indigo-100 flex items-center justify-center">
+                    <span class="text-indigo-600 font-bold text-sm">M</span>
+                  </div>
+                </div>
+                <div class="ml-4 flex-1 min-w-0">
+                  <div class="flex flex-wrap items-center gap-2">
+                    <div class="text-sm font-medium text-gray-900 truncate">
+                      <%= material.material_code || 'Draft' %>
+                    </div>
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium flex-shrink-0 <%= 
+                      material.approved? ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                    %>">
+                      <%= material.state.humanize %>
+                    </span>
+                  </div>
+                  <div class="text-sm text-gray-500 mt-1 line-clamp-2">
+                    <%= truncate(material.description, length: 100) %>
+                  </div>
+                  <div class="mt-1 text-xs text-gray-400 flex flex-wrap gap-x-2">
+                    <span>Created <%= material.created_at.strftime("%b %d, %Y") %></span>
+                    <% if material.procurement_unit %>
+                      <span>• Procurement: <%= material.procurement_unit.abbreviation %></span>
+                    <% end %>
+                    <% if material.sale_unit %>
+                      <span>• Sale: <%= material.sale_unit.abbreviation %></span>
+                    <% end %>
+                    <% if material.has_bom %>
+                      <span>• Has BOM</span>
+                    <% end %>
+                  </div>
+                </div>
+              </div>
+              <div class="flex items-center gap-2 sm:flex-shrink-0">
+                <%= link_to material_path(material), class: "inline-flex items-center justify-center px-3 py-1.5 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors" do %>
+                  View
+                <% end %>
+                <% if can? :update, material %>
+                  <%= link_to edit_material_path(material), class: "inline-flex items-center justify-center px-3 py-1.5 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-yellow-700 bg-yellow-50 hover:bg-yellow-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500 transition-colors" do %>
+                    Edit
+                  <% end %>
+                <% end %>
+                <% if can?(:approve, material) && material.draft? %>
+                  <%= button_to approve_material_path(material), method: :post, 
+                      class: "inline-flex items-center justify-center px-3 py-1.5 border border-green-300 shadow-sm text-sm font-medium rounded-md text-green-700 bg-green-50 hover:bg-green-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors" do %>
+                    Approve
+                  <% end %>
+                <% end %>
+              </div>
+            </div>
+          </div>
+        </li>
+      <% end %>
+    </ul>
+  </div>
+<% else %>
+  <div class="bg-white shadow rounded-lg p-12 text-center">
+    <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+    </svg>
+    <h3 class="mt-2 text-sm font-medium text-gray-900">No materials found</h3>
+    <p class="mt-1 text-sm text-gray-500">Try adjusting your search criteria.</p>
+  </div>
+<% end %>
+

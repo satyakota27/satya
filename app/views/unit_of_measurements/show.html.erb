@@ -1,0 +1,53 @@
+<div class="px-4 sm:px-0">
+  <div class="sm:flex sm:items-center mb-6">
+    <div class="sm:flex-auto">
+      <h1 class="text-3xl font-bold text-gray-900">Unit of Measurement</h1>
+    </div>
+    <div class="mt-4 sm:mt-0 sm:ml-16 sm:flex-none flex space-x-3">
+      <% if can? :update, @unit_of_measurement %>
+        <%= link_to edit_material_unit_of_measurement_path(@material, @unit_of_measurement), class: "inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50" do %>
+          Edit
+        <% end %>
+      <% end %>
+      <% if @material %>
+        <%= link_to material_unit_of_measurements_path(@material), class: "inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50" do %>
+          Back to List
+        <% end %>
+      <% else %>
+        <%= link_to materials_path, class: "inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50" do %>
+          Back to Materials
+        <% end %>
+      <% end %>
+    </div>
+  </div>
+
+  <div class="bg-white shadow sm:rounded-lg">
+    <div class="px-4 py-5 sm:p-6">
+      <dl class="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2">
+        <div>
+          <dt class="text-sm font-medium text-gray-500">Name</dt>
+          <dd class="mt-1 text-sm text-gray-900"><%= @unit_of_measurement.name %></dd>
+        </div>
+        <div>
+          <dt class="text-sm font-medium text-gray-500">Abbreviation</dt>
+          <dd class="mt-1 text-sm text-gray-900 font-mono"><%= @unit_of_measurement.abbreviation %></dd>
+        </div>
+        <div>
+          <dt class="text-sm font-medium text-gray-500">Status</dt>
+          <dd class="mt-1">
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium <%= 
+              @unit_of_measurement.active? ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+            %>">
+              <%= @unit_of_measurement.active? ? 'Active' : 'Inactive' %>
+            </span>
+          </dd>
+        </div>
+        <div>
+          <dt class="text-sm font-medium text-gray-500">Created At</dt>
+          <dd class="mt-1 text-sm text-gray-900"><%= @unit_of_measurement.created_at.strftime("%B %d, %Y at %I:%M %p") %></dd>
+        </div>
+      </dl>
+    </div>
+  </div>
+</div>
+

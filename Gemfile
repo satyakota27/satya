@@ -28,6 +28,12 @@ gem "cancancan"
 # Multi-tenancy
 gem "acts_as_tenant"
 
+# Pagination
+gem "kaminari"
+
+# PostgreSQL full-text search
+gem "pg_search", require: "pg_search"
+
 # Windows does not include zoneinfo files, so bundle the tzinfo-data gem
 gem "tzinfo-data", platforms: %i[ windows jruby ]
 
