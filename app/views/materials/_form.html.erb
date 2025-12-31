@@ -55,6 +55,15 @@
                 <span class="ml-4 text-sm font-medium text-gray-500">Additional Settings</span>
               </div>
             </li>
+            <li class="relative flex-1">
+              <div class="flex items-center">
+                <div class="absolute left-0 top-0 h-0.5 w-full bg-gray-200" aria-hidden="true"></div>
+                <div class="relative flex h-8 w-8 items-center justify-center rounded-full bg-gray-200" id="step-4-indicator">
+                  <span class="text-sm font-semibold text-gray-600">4</span>
+                </div>
+                <span class="ml-4 text-sm font-medium text-gray-500">Quality Tests</span>
+              </div>
+            </li>
           </ol>
         </nav>
       </div>
@@ -328,6 +337,27 @@
         </div>
       </div>
 
+      <!-- Step 4: Quality Tests -->
+      <div class="wizard-step hidden" id="wizard-step-4" data-step="4">
+        <div class="space-y-6">
+          <div>
+            <h2 class="text-xl font-semibold text-gray-900 mb-4">Store Acceptance Quality Tests</h2>
+            <p class="text-sm text-gray-500 mb-6">Add quality tests for material acceptance.</p>
+          </div>
+
+          <div id="quality-tests-list" class="space-y-6" data-material-id="<%= @material.id if @material.persisted? %>">
+            <!-- Quality tests will be added here dynamically -->
+          </div>
+
+          <button type="button" id="add-quality-test" class="w-full sm:w-auto inline-flex items-center justify-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+            <svg class="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+            </svg>
+            Add Test
+          </button>
+        </div>
+      </div>
+
       <!-- Wizard Navigation -->
       <div class="mt-8 flex items-center justify-between border-t border-gray-200 pt-6">
         <div>
@@ -365,6 +395,89 @@
           </div>
           <div class="flex items-center justify-end space-x-3 pt-4">
             <button type="button" id="cancel-unit-modal" class="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50">
+              Cancel
+            </button>
+            <%= form.submit "Create", class: "inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700" %>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div>
+
+<!-- Quality Test Creation Modal -->
+<div id="quality-test-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+  <div class="relative top-10 sm:top-20 mx-auto p-4 sm:p-5 border w-full max-w-2xl mx-4 sm:mx-auto shadow-lg rounded-md bg-white">
+    <div class="mt-3">
+      <h3 class="text-lg font-medium text-gray-900 mb-4">Create New Quality Test</h3>
+      <%= form_with model: QualityTest.new, url: quality_tests_path, local: false, format: :json, id: "quality-test-form" do |form| %>
+        <div class="space-y-6">
+          <div>
+            <%= form.label :description, class: "block text-sm font-medium text-gray-700" do %>
+              Description <span class="text-red-500">*</span>
+            <% end %>
+            <div class="mt-1">
+              <%= form.text_area :description, rows: 4, required: true, class: "shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md", placeholder: "Enter a detailed description of the quality test..." %>
+            </div>
+          </div>
+
+          <div>
+            <%= form.label :result_type, "Type of result", class: "block text-sm font-medium text-gray-700 mb-2" do %>
+              Type of result <span class="text-red-500">*</span>
+            <% end %>
+            <div class="space-y-2">
+              <div class="flex items-center">
+                <%= form.radio_button :result_type, "boolean", class: "modal-result-type-radio h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300", required: true, checked: true %>
+                <%= form.label :result_type_boolean, "Boolean", class: "ml-2 block text-sm text-gray-900" %>
+              </div>
+              <div class="flex items-center">
+                <%= form.radio_button :result_type, "range", class: "modal-result-type-radio h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300", required: true %>
+                <%= form.label :result_type_range, "Range", class: "ml-2 block text-sm text-gray-900" %>
+              </div>
+              <div class="flex items-center">
+                <%= form.radio_button :result_type, "absolute", class: "modal-result-type-radio h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300", required: true %>
+                <%= form.label :result_type_absolute, "Absolute", class: "ml-2 block text-sm text-gray-900" %>
+              </div>
+            </div>
+          </div>
+
+          <!-- Range Fields -->
+          <div id="modal-range-fields" class="hidden">
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div>
+                <%= form.label :lower_limit, "Lower Limit", class: "block text-sm font-medium text-gray-700 mb-1" do %>
+                  Lower Limit <span class="text-red-500">*</span>
+                <% end %>
+                <%= form.number_field :lower_limit, step: 0.01, class: "shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md", placeholder: "Enter lower limit..." %>
+              </div>
+              <div>
+                <%= form.label :upper_limit, "Upper Limit", class: "block text-sm font-medium text-gray-700 mb-1" do %>
+                  Upper Limit <span class="text-red-500">*</span>
+                <% end %>
+                <%= form.number_field :upper_limit, step: 0.01, class: "shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md", placeholder: "Enter upper limit..." %>
+              </div>
+            </div>
+          </div>
+
+          <!-- Absolute Fields -->
+          <div id="modal-absolute-fields" class="hidden">
+            <div>
+              <%= form.label :absolute_value, "Value", class: "block text-sm font-medium text-gray-700 mb-1" do %>
+                Value <span class="text-red-500">*</span>
+              <% end %>
+              <%= form.number_field :absolute_value, step: 0.01, class: "shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md", placeholder: "Enter absolute value..." %>
+            </div>
+          </div>
+
+          <!-- File Upload -->
+          <div>
+            <%= form.label :documents, "Attach documents (PDF or images, ≤ 5MB each)", class: "block text-sm font-medium text-gray-700 mb-2" %>
+            <%= form.file_field :documents, multiple: true, accept: ".pdf,.jpg,.jpeg,.png,.gif,.webp", class: "block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100" %>
+            <p class="mt-1 text-xs text-gray-500">You can select multiple files. Each file must be a PDF or image and less than 5MB.</p>
+          </div>
+
+          <div class="flex items-center justify-end space-x-3 pt-4 border-t border-gray-200">
+            <button type="button" id="cancel-quality-test-modal" class="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50">
               Cancel
             </button>
             <%= form.submit "Create", class: "inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700" %>

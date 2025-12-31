@@ -104,7 +104,7 @@
                   <div class="relative">
                     <%= link_to materials_path, 
                         class: "group flex items-center justify-start px-3 py-2.5 text-sm font-medium rounded-lg transition-colors sidebar-link #{request.path.start_with?('/materials') && !request.path.include?('unit-of-measurements') ? 'bg-indigo-50 text-indigo-700' : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'}" do %>
-                      <svg class="h-5 w-5 flex-shrink-0 sidebar-icon #{request.path.start_with?('/materials') && !request.path.include?('unit-of-measurements') ? 'text-indigo-500' : 'text-gray-400 group-hover:text-gray-500'}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg class="h-5 w-5 flex-shrink-0 sidebar-icon #{request.path.start_with?('/materials') && !request.path.include?('unit-of-measurements') && !request.path.include?('quality-tests') ? 'text-indigo-500' : 'text-gray-400 group-hover:text-gray-500'}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
                       </svg>
                       <span class="sidebar-text ml-3 whitespace-nowrap">Materials</span>
@@ -117,14 +117,25 @@
                       <% end %>
                     <% end %>
                     
-                    <% if current_user.has_permission?('create_material') && can?(:read, UnitOfMeasurement) %>
-                      <div id="material-submenu" class="material-submenu mt-1 space-y-1 <%= request.path.include?('unit-of-measurements') ? '' : 'hidden' %>">
-                        <%= link_to unit_of_measurements_path, 
-                            class: "group flex items-center justify-start pl-8 pr-3 py-2 text-sm font-medium rounded-lg transition-colors sidebar-link #{request.path.include?('unit-of-measurements') ? 'bg-indigo-50 text-indigo-700' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'}" do %>
-                          <svg class="h-4 w-4 flex-shrink-0 sidebar-icon #{request.path.include?('unit-of-measurements') ? 'text-indigo-500' : 'text-gray-400 group-hover:text-gray-500'}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-                          </svg>
-                          <span class="sidebar-text ml-2 whitespace-nowrap">Units of Measurement</span>
+                    <% if current_user.has_permission?('create_material') && (can?(:read, UnitOfMeasurement) || can?(:read, QualityTest)) %>
+                      <div id="material-submenu" class="material-submenu mt-1 space-y-1 <%= (request.path.include?('unit-of-measurements') || request.path.include?('quality-tests')) ? '' : 'hidden' %>">
+                        <% if can?(:read, UnitOfMeasurement) %>
+                          <%= link_to unit_of_measurements_path, 
+                              class: "group flex items-center justify-start pl-8 pr-3 py-2 text-sm font-medium rounded-lg transition-colors sidebar-link #{request.path.include?('unit-of-measurements') ? 'bg-indigo-50 text-indigo-700' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'}" do %>
+                            <svg class="h-4 w-4 flex-shrink-0 sidebar-icon #{request.path.include?('unit-of-measurements') ? 'text-indigo-500' : 'text-gray-400 group-hover:text-gray-500'}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                            </svg>
+                            <span class="sidebar-text ml-2 whitespace-nowrap">Units of Measurement</span>
+                          <% end %>
+                        <% end %>
+                        <% if can?(:read, QualityTest) %>
+                          <%= link_to quality_tests_path, 
+                              class: "group flex items-center justify-start pl-8 pr-3 py-2 text-sm font-medium rounded-lg transition-colors sidebar-link #{request.path.include?('quality-tests') ? 'bg-indigo-50 text-indigo-700' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'}" do %>
+                            <svg class="h-4 w-4 flex-shrink-0 sidebar-icon #{request.path.include?('quality-tests') ? 'text-indigo-500' : 'text-gray-400 group-hover:text-gray-500'}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <span class="sidebar-text ml-2 whitespace-nowrap">Quality Tests</span>
+                          <% end %>
                         <% end %>
                       </div>
                     <% end %>

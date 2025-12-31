@@ -134,6 +134,22 @@ class Ability
       
       # Super admins can manage all units
       can :manage, UnitOfMeasurement if user.super_admin?
+      
+      # Quality Tests permissions
+      can :read, QualityTest, tenant_id: user.tenant_id unless user.super_admin?
+      can :read, QualityTest if user.super_admin?
+      
+      # Users who can create materials should also be able to create quality tests
+      if user.has_permission?('create_material')
+        can :create, QualityTest
+        can :update, QualityTest, tenant_id: user.tenant_id unless user.super_admin?
+        can :update, QualityTest if user.super_admin?
+        can :destroy, QualityTest, tenant_id: user.tenant_id unless user.super_admin?
+        can :destroy, QualityTest if user.super_admin?
+      end
+      
+      # Super admins can manage all quality tests
+      can :manage, QualityTest if user.super_admin?
     end
   end
 end

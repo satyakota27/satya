@@ -185,6 +185,97 @@
           </div>
         </div>
       <% end %>
+
+      <% if @material_quality_tests.any? %>
+        <div class="mt-8 pt-8 border-t border-gray-200">
+          <h3 class="text-lg font-medium text-gray-900 mb-4">Store Acceptance Quality Tests</h3>
+          <!-- Mobile: Card layout -->
+          <div class="block sm:hidden space-y-3">
+            <% @material_quality_tests.each do |mqt| %>
+              <% qt = mqt.quality_test %>
+              <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                <div class="mb-2">
+                  <span class="text-xs font-medium text-gray-500">Test Number</span>
+                  <p class="text-sm font-medium text-gray-900"><%= qt.test_number %></p>
+                </div>
+                <div class="mb-2">
+                  <span class="text-xs font-medium text-gray-500">Description</span>
+                  <p class="text-sm text-gray-700"><%= qt.description %></p>
+                </div>
+                <div class="mb-2">
+                  <span class="text-xs font-medium text-gray-500">Result Type</span>
+                  <p class="text-sm text-gray-700 capitalize"><%= qt.result_type %></p>
+                </div>
+                <% if qt.range? %>
+                  <div class="mb-2">
+                    <span class="text-xs font-medium text-gray-500">Range</span>
+                    <p class="text-sm text-gray-700">
+                      <%= qt.lower_limit.present? ? qt.lower_limit : 'N/A' %> - <%= qt.upper_limit.present? ? qt.upper_limit : 'N/A' %>
+                    </p>
+                  </div>
+                <% elsif qt.absolute? %>
+                  <div class="mb-2">
+                    <span class="text-xs font-medium text-gray-500">Value</span>
+                    <p class="text-sm text-gray-700"><%= qt.absolute_value %></p>
+                  </div>
+                <% end %>
+                <% if qt.documents.attached? %>
+                  <div>
+                    <span class="text-xs font-medium text-gray-500">Documents</span>
+                    <p class="text-sm text-green-600">✓ <%= pluralize(qt.documents.count, 'document') %> attached</p>
+                  </div>
+                <% end %>
+              </div>
+            <% end %>
+          </div>
+          <!-- Desktop: Table layout -->
+          <div class="hidden sm:block overflow-hidden shadow ring-1 ring-black ring-opacity-5 sm:rounded-md">
+            <table class="min-w-full divide-y divide-gray-300">
+              <thead class="bg-gray-50">
+                <tr>
+                  <th class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6">Test Number</th>
+                  <th class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Description</th>
+                  <th class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Result Type</th>
+                  <th class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Limits/Value</th>
+                  <th class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Documents</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-200 bg-white">
+                <% @material_quality_tests.each do |mqt| %>
+                  <% qt = mqt.quality_test %>
+                  <tr>
+                    <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6">
+                      <%= qt.test_number %>
+                    </td>
+                    <td class="px-3 py-4 text-sm text-gray-500">
+                      <%= qt.description %>
+                    </td>
+                    <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500 capitalize">
+                      <%= qt.result_type %>
+                    </td>
+                    <td class="px-3 py-4 text-sm text-gray-500">
+                      <% if qt.range? %>
+                        <%= qt.lower_limit.present? ? qt.lower_limit : 'N/A' %> - <%= qt.upper_limit.present? ? qt.upper_limit : 'N/A' %>
+                      <% elsif qt.absolute? %>
+                        <%= qt.absolute_value %>
+                      <% else %>
+                        N/A
+                      <% end %>
+                    </td>
+                    <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                      <% if qt.documents.attached? %>
+                        <span class="text-green-600">✓ <%= pluralize(qt.documents.count, 'document') %></span>
+                      <% else %>
+                        <span class="text-gray-400">None</span>
+                      <% end %>
+                    </td>
+                  </tr>
+                <% end %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      <% end %>
     </div>
   </div>
 </div>

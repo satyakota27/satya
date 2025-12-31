@@ -51,9 +51,31 @@ class MaterialsController < ApplicationController
     }
   end
 
+  def quality_tests_search
+    authorize! :read, Material
+    query = params[:q] || ''
+    @quality_tests = QualityTest.searchable(query).limit(10)
+    
+    render json: {
+      quality_tests: @quality_tests.map { |qt| 
+        { 
+          id: qt.id, 
+          test_number: qt.test_number, 
+          description: qt.description,
+          result_type: qt.result_type,
+          lower_limit: qt.lower_limit,
+          upper_limit: qt.upper_limit,
+          absolute_value: qt.absolute_value,
+          has_documents: qt.documents.attached?
+        } 
+      }
+    }
+  end
+
   def show
     authorize! :read, @material
     @bom_components = @material.material_bom_components.includes(:component_material) if @material.has_bom
+    @material_quality_tests = @material.material_quality_tests.includes(:quality_test)
   end
 
   def new
@@ -85,6 +107,9 @@ class MaterialsController < ApplicationController
         end
       end
       
+      # Handle Quality Tests
+      handle_quality_tests(@material, params)
+      
       redirect_to @material, notice: 'Material was successfully created.'
     else
       @unit_of_measurements = UnitOfMeasurement.active.ordered
@@ -96,6 +121,7 @@ class MaterialsController < ApplicationController
     authorize! :update, @material
     @unit_of_measurements = UnitOfMeasurement.active.ordered
     @bom_components = @material.material_bom_components.includes(:component_material)
+    @material_quality_tests = @material.material_quality_tests.includes(:quality_test)
   end
 
   def update
@@ -148,6 +174,9 @@ class MaterialsController < ApplicationController
         # Remove all BOM components if has_bom is false
         @material.material_bom_components.destroy_all
       end
+      
+      # Handle Quality Tests
+      handle_quality_tests(@material, params)
       
       notice_message = if was_rejected
         'Material has been updated and moved back to draft state. Please resubmit for approval.'
@@ -220,7 +249,41 @@ class MaterialsController < ApplicationController
       :shelf_life_years, :shelf_life_months, :shelf_life_weeks, :shelf_life_days, 
       :shelf_life_hours, :shelf_life_minutes, :shelf_life_seconds, 
       :has_minimum_stock_value, :minimum_stock_value, :has_minimum_reorder_value, :minimum_reorder_value,
-      :state, :approver_comments, :rejected_by_id, :rejected_at, :approved_by_id, :approved_at)
+      :state, :approver_comments, :rejected_by_id, :rejected_at, :approved_by_id, :approved_at,
+      quality_test_documents: {})
+  end
+
+  def handle_quality_tests(material, params)
+    return unless params[:material].present?
+    
+    quality_test_ids = params[:material][:quality_test_ids] || []
+    
+    # Remove all existing quality tests first
+    material.material_quality_tests.destroy_all
+    
+    # Associate quality tests with material
+    quality_test_ids.each do |test_id|
+      next if test_id.blank?
+      
+      quality_test = QualityTest.find_by(id: test_id)
+      next unless quality_test
+      
+      # Create material quality test association (copy values from quality_test)
+      material_quality_test = material.material_quality_tests.build(
+        quality_test: quality_test,
+        result_type: quality_test.result_type || 'boolean'
+      )
+      
+      # Copy limit/value fields based on result type
+      if quality_test.range?
+        material_quality_test.lower_limit = quality_test.lower_limit
+        material_quality_test.upper_limit = quality_test.upper_limit
+      elsif quality_test.absolute?
+        material_quality_test.absolute_value = quality_test.absolute_value
+      end
+      
+      material_quality_test.save!
+    end
   end
 end
 

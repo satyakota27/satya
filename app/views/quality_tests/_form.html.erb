@@ -1,0 +1,137 @@
+<%= form_with model: @quality_test, local: true, url: (@quality_test.new_record? ? quality_tests_path : quality_test_path(@quality_test)) do |form| %>
+  <% if @quality_test.errors.any? %>
+    <div class="mb-4 bg-red-50 border-l-4 border-red-400 p-4 rounded-md">
+      <div class="flex">
+        <div class="flex-shrink-0">
+          <svg class="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+          </svg>
+        </div>
+        <div class="ml-3">
+          <h3 class="text-sm font-medium text-red-800">
+            <%= pluralize(@quality_test.errors.count, "error") %> prohibited this quality test from being saved:
+          </h3>
+          <div class="mt-2 text-sm text-red-700">
+            <ul class="list-disc list-inside space-y-1">
+              <% @quality_test.errors.full_messages.each do |message| %>
+                <li><%= message %></li>
+              <% end %>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  <% end %>
+
+  <div class="space-y-6">
+    <div>
+      <%= form.label :description, class: "block text-sm font-medium text-gray-700" do %>
+        Description <span class="text-red-500">*</span>
+      <% end %>
+      <div class="mt-1">
+        <%= form.text_area :description, rows: 4, required: true, class: "shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md", placeholder: "Enter a detailed description of the quality test..." %>
+      </div>
+      <p class="mt-1 text-sm text-gray-500">Describe what this quality test measures or validates.</p>
+    </div>
+
+    <div>
+      <%= form.label :result_type, "Type of result", class: "block text-sm font-medium text-gray-700 mb-2" do %>
+        Type of result <span class="text-red-500">*</span>
+      <% end %>
+      <div class="space-y-2">
+        <div class="flex items-center">
+          <%= form.radio_button :result_type, "boolean", class: "result-type-radio h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300", required: true %>
+          <%= form.label :result_type_boolean, "Boolean", class: "ml-2 block text-sm text-gray-900" %>
+        </div>
+        <div class="flex items-center">
+          <%= form.radio_button :result_type, "range", class: "result-type-radio h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300", required: true %>
+          <%= form.label :result_type_range, "Range", class: "ml-2 block text-sm text-gray-900" %>
+        </div>
+        <div class="flex items-center">
+          <%= form.radio_button :result_type, "absolute", class: "result-type-radio h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300", required: true %>
+          <%= form.label :result_type_absolute, "Absolute", class: "ml-2 block text-sm text-gray-900" %>
+        </div>
+      </div>
+    </div>
+
+    <!-- Range Fields -->
+    <div id="range-fields" class="<%= 'hidden' unless @quality_test.range? %>">
+      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div>
+          <%= form.label :lower_limit, "Lower Limit", class: "block text-sm font-medium text-gray-700 mb-1" do %>
+            Lower Limit <span class="text-red-500">*</span>
+          <% end %>
+          <%= form.number_field :lower_limit, step: 0.01, class: "shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md", placeholder: "Enter lower limit..." %>
+        </div>
+        <div>
+          <%= form.label :upper_limit, "Upper Limit", class: "block text-sm font-medium text-gray-700 mb-1" do %>
+            Upper Limit <span class="text-red-500">*</span>
+          <% end %>
+          <%= form.number_field :upper_limit, step: 0.01, class: "shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md", placeholder: "Enter upper limit..." %>
+        </div>
+      </div>
+    </div>
+
+    <!-- Absolute Fields -->
+    <div id="absolute-fields" class="<%= 'hidden' unless @quality_test.absolute? %>">
+      <div>
+        <%= form.label :absolute_value, "Value", class: "block text-sm font-medium text-gray-700 mb-1" do %>
+          Value <span class="text-red-500">*</span>
+        <% end %>
+        <%= form.number_field :absolute_value, step: 0.01, class: "shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md", placeholder: "Enter absolute value..." %>
+      </div>
+    </div>
+
+    <!-- File Upload -->
+    <div>
+      <%= form.label :documents, "Attach documents (PDF or images, ≤ 5MB each)", class: "block text-sm font-medium text-gray-700 mb-2" %>
+      <%= form.file_field :documents, multiple: true, accept: ".pdf,.jpg,.jpeg,.png,.gif,.webp", id: "quality-test-file-input", class: "block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100" %>
+      <p class="mt-1 text-xs text-gray-500">You can select multiple files. Each file must be a PDF or image and less than 5MB.</p>
+      
+      <!-- Selected files (not yet uploaded) -->
+      <div id="selected-files-list" class="mt-4 space-y-2 hidden">
+        <p class="text-sm font-medium text-gray-700 mb-2">Selected files (click Upload to attach):</p>
+        <ul id="selected-files" class="space-y-2"></ul>
+      </div>
+
+      <!-- Uploaded documents -->
+      <div class="mt-4 <%= 'hidden' unless @quality_test.persisted? && @quality_test.documents.attached? %>" id="uploaded-documents-section">
+        <p class="text-sm font-medium text-gray-700 mb-2">Uploaded documents:</p>
+        <ul id="uploaded-documents" class="space-y-2">
+          <% if @quality_test.persisted? && @quality_test.documents.attached? %>
+            <% @quality_test.documents.each do |document| %>
+              <li class="flex items-center justify-between p-2 bg-green-50 rounded-md border border-green-200" data-document-id="<%= document.id %>">
+                <div class="flex items-center space-x-2">
+                  <svg class="h-5 w-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <%= link_to document.filename, rails_blob_path(document, disposition: "attachment"), class: "text-indigo-600 hover:text-indigo-800 text-sm" %>
+                  <span class="text-xs text-gray-500">(<%= number_to_human_size(document.byte_size) %>)</span>
+                </div>
+                <button type="button" class="remove-document-server text-red-600 hover:text-red-800 text-sm font-medium bg-transparent border-0 p-0 cursor-pointer" data-document-id="<%= document.id %>">
+                  <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                </button>
+              </li>
+            <% end %>
+          <% end %>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Hidden field to store temporary quality test ID -->
+    <% if @quality_test.persisted? %>
+      <%= form.hidden_field :id, value: @quality_test.id %>
+    <% else %>
+      <%= form.hidden_field :temp_id, id: "quality-test-temp-id", value: "" %>
+    <% end %>
+
+    <div class="flex items-center justify-end space-x-3 pt-4 border-t border-gray-200">
+      <%= link_to "Cancel", quality_tests_path, 
+          class: "bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors" %>
+      <%= form.submit class: "inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors" %>
+    </div>
+  </div>
+<% end %>
+

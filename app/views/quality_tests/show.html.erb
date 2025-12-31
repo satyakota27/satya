@@ -1,0 +1,75 @@
+<div class="px-4 sm:px-0">
+  <div class="sm:flex sm:items-center mb-6">
+    <div class="sm:flex-auto">
+      <h1 class="text-3xl font-bold text-gray-900">Quality Test Details</h1>
+      <p class="mt-2 text-sm text-gray-500">View quality test information.</p>
+    </div>
+    <div class="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
+      <% if can? :update, @quality_test %>
+        <%= link_to edit_quality_test_path(@quality_test), class: "inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50" do %>
+          Edit
+        <% end %>
+      <% end %>
+      <%= link_to quality_tests_path, class: "ml-2 inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50" do %>
+        Back to Quality Tests
+      <% end %>
+    </div>
+  </div>
+
+  <div class="bg-white shadow rounded-lg overflow-hidden">
+    <div class="px-4 py-5 sm:p-6">
+      <dl class="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2">
+        <div>
+          <dt class="text-sm font-medium text-gray-500">Test Number</dt>
+          <dd class="mt-1 text-sm text-gray-900 font-mono"><%= @quality_test.test_number %></dd>
+        </div>
+        <div>
+          <dt class="text-sm font-medium text-gray-500">Result Type</dt>
+          <dd class="mt-1 text-sm text-gray-900 capitalize"><%= @quality_test.result_type %></dd>
+        </div>
+        <div class="sm:col-span-2">
+          <dt class="text-sm font-medium text-gray-500">Description</dt>
+          <dd class="mt-1 text-sm text-gray-900"><%= @quality_test.description %></dd>
+        </div>
+        <% if @quality_test.range? %>
+          <div>
+            <dt class="text-sm font-medium text-gray-500">Lower Limit</dt>
+            <dd class="mt-1 text-sm text-gray-900"><%= @quality_test.lower_limit %></dd>
+          </div>
+          <div>
+            <dt class="text-sm font-medium text-gray-500">Upper Limit</dt>
+            <dd class="mt-1 text-sm text-gray-900"><%= @quality_test.upper_limit %></dd>
+          </div>
+        <% elsif @quality_test.absolute? %>
+          <div>
+            <dt class="text-sm font-medium text-gray-500">Absolute Value</dt>
+            <dd class="mt-1 text-sm text-gray-900"><%= @quality_test.absolute_value %></dd>
+          </div>
+        <% end %>
+        <% if @quality_test.documents.attached? %>
+          <div class="sm:col-span-2">
+            <dt class="text-sm font-medium text-gray-500">Attached Documents</dt>
+            <dd class="mt-1">
+              <ul class="list-disc list-inside space-y-1">
+                <% @quality_test.documents.each do |document| %>
+                  <li>
+                    <%= link_to document.filename, rails_blob_path(document, disposition: "attachment"), class: "text-indigo-600 hover:text-indigo-800" %>
+                    (<%= number_to_human_size(document.byte_size) %>)
+                  </li>
+                <% end %>
+              </ul>
+            </dd>
+          </div>
+        <% end %>
+        <div>
+          <dt class="text-sm font-medium text-gray-500">Created At</dt>
+          <dd class="mt-1 text-sm text-gray-900"><%= @quality_test.created_at.strftime("%B %d, %Y at %I:%M %p") %></dd>
+        </div>
+        <div>
+          <dt class="text-sm font-medium text-gray-500">Updated At</dt>
+          <dd class="mt-1 text-sm text-gray-900"><%= @quality_test.updated_at.strftime("%B %d, %Y at %I:%M %p") %></dd>
+        </div>
+      </dl>
+    </div>
+  </div>
+</div>

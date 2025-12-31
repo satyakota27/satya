@@ -10,10 +10,38 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_12_31_101357) do
+ActiveRecord::Schema[8.0].define(version: 2025_12_31_110425) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
+
+  create_table "active_storage_attachments", force: :cascade do |t|
+    t.string "name", null: false
+    t.string "record_type", null: false
+    t.bigint "record_id", null: false
+    t.bigint "blob_id", null: false
+    t.datetime "created_at", null: false
+    t.index ["blob_id"], name: "index_active_storage_attachments_on_blob_id"
+    t.index ["record_type", "record_id", "name", "blob_id"], name: "index_active_storage_attachments_uniqueness", unique: true
+  end
+
+  create_table "active_storage_blobs", force: :cascade do |t|
+    t.string "key", null: false
+    t.string "filename", null: false
+    t.string "content_type"
+    t.text "metadata"
+    t.string "service_name", null: false
+    t.bigint "byte_size", null: false
+    t.string "checksum"
+    t.datetime "created_at", null: false
+    t.index ["key"], name: "index_active_storage_blobs_on_key", unique: true
+  end
+
+  create_table "active_storage_variant_records", force: :cascade do |t|
+    t.bigint "blob_id", null: false
+    t.string "variation_digest", null: false
+    t.index ["blob_id", "variation_digest"], name: "index_active_storage_variant_records_uniqueness", unique: true
+  end
 
   create_table "functionalities", force: :cascade do |t|
     t.string "name", null: false
@@ -36,6 +64,20 @@ ActiveRecord::Schema[8.0].define(version: 2025_12_31_101357) do
     t.datetime "updated_at", null: false
     t.index ["component_material_id"], name: "index_material_bom_components_on_component_material_id"
     t.index ["material_id"], name: "index_material_bom_components_on_material_id"
+  end
+
+  create_table "material_quality_tests", force: :cascade do |t|
+    t.bigint "material_id", null: false
+    t.bigint "quality_test_id", null: false
+    t.string "result_type"
+    t.decimal "lower_limit", precision: 10, scale: 2
+    t.decimal "upper_limit", precision: 10, scale: 2
+    t.decimal "absolute_value", precision: 10, scale: 2
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["material_id", "quality_test_id"], name: "idx_on_material_id_quality_test_id_06e69f6de1", unique: true
+    t.index ["material_id"], name: "index_material_quality_tests_on_material_id"
+    t.index ["quality_test_id"], name: "index_material_quality_tests_on_quality_test_id"
   end
 
   create_table "materials", force: :cascade do |t|
@@ -76,6 +118,20 @@ ActiveRecord::Schema[8.0].define(version: 2025_12_31_101357) do
     t.index ["tenant_id", "material_code"], name: "index_materials_on_tenant_id_and_material_code", unique: true
     t.index ["tenant_id"], name: "index_materials_on_tenant_id"
     t.index ["tracking_type"], name: "index_materials_on_tracking_type"
+  end
+
+  create_table "quality_tests", force: :cascade do |t|
+    t.bigint "tenant_id", null: false
+    t.string "test_number"
+    t.text "description"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.string "result_type"
+    t.decimal "lower_limit"
+    t.decimal "upper_limit"
+    t.decimal "absolute_value"
+    t.index ["tenant_id", "test_number"], name: "index_quality_tests_on_tenant_id_and_test_number"
+    t.index ["tenant_id"], name: "index_quality_tests_on_tenant_id"
   end
 
   create_table "sub_functionalities", force: :cascade do |t|
@@ -146,11 +202,16 @@ ActiveRecord::Schema[8.0].define(version: 2025_12_31_101357) do
     t.index ["tenant_id"], name: "index_users_on_tenant_id"
   end
 
+  add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
+  add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "material_bom_components", "materials"
   add_foreign_key "material_bom_components", "materials", column: "component_material_id"
+  add_foreign_key "material_quality_tests", "materials"
+  add_foreign_key "material_quality_tests", "quality_tests"
   add_foreign_key "materials", "tenants"
   add_foreign_key "materials", "unit_of_measurements", column: "procurement_unit_id"
   add_foreign_key "materials", "unit_of_measurements", column: "sale_unit_id"
+  add_foreign_key "quality_tests", "tenants"
   add_foreign_key "sub_functionalities", "functionalities"
   add_foreign_key "subscriptions", "tenants"
   add_foreign_key "unit_of_measurements", "tenants"

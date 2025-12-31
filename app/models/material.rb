@@ -11,6 +11,8 @@ class Material < ApplicationRecord
   belongs_to :approved_by, class_name: 'User', optional: true
   has_many :material_bom_components, dependent: :destroy
   has_many :bom_components, through: :material_bom_components, source: :component_material
+  has_many :material_quality_tests, dependent: :destroy
+  has_many :quality_tests, through: :material_quality_tests
 
   enum :state, { draft: 'draft', rejected: 'rejected', approved: 'approved' }
   
