@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_12_31_110425) do
+ActiveRecord::Schema[8.0].define(version: 2025_12_31_181252) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -66,6 +66,16 @@ ActiveRecord::Schema[8.0].define(version: 2025_12_31_110425) do
     t.index ["material_id"], name: "index_material_bom_components_on_material_id"
   end
 
+  create_table "material_process_steps", force: :cascade do |t|
+    t.bigint "material_id", null: false
+    t.bigint "process_step_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["material_id", "process_step_id"], name: "idx_on_material_id_process_step_id_8d5bf3c79e", unique: true
+    t.index ["material_id"], name: "index_material_process_steps_on_material_id"
+    t.index ["process_step_id"], name: "index_material_process_steps_on_process_step_id"
+  end
+
   create_table "material_quality_tests", force: :cascade do |t|
     t.bigint "material_id", null: false
     t.bigint "quality_test_id", null: false
@@ -118,6 +128,30 @@ ActiveRecord::Schema[8.0].define(version: 2025_12_31_110425) do
     t.index ["tenant_id", "material_code"], name: "index_materials_on_tenant_id_and_material_code", unique: true
     t.index ["tenant_id"], name: "index_materials_on_tenant_id"
     t.index ["tracking_type"], name: "index_materials_on_tracking_type"
+  end
+
+  create_table "process_step_quality_tests", force: :cascade do |t|
+    t.bigint "process_step_id", null: false
+    t.bigint "quality_test_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["process_step_id", "quality_test_id"], name: "idx_on_process_step_id_quality_test_id_87dd0bfb5e", unique: true
+    t.index ["process_step_id"], name: "index_process_step_quality_tests_on_process_step_id"
+    t.index ["quality_test_id"], name: "index_process_step_quality_tests_on_quality_test_id"
+  end
+
+  create_table "process_steps", force: :cascade do |t|
+    t.bigint "tenant_id", null: false
+    t.string "process_code"
+    t.text "description", null: false
+    t.integer "estimated_days"
+    t.integer "estimated_hours"
+    t.integer "estimated_minutes"
+    t.integer "estimated_seconds"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["tenant_id", "process_code"], name: "index_process_steps_on_tenant_id_and_process_code", unique: true
+    t.index ["tenant_id"], name: "index_process_steps_on_tenant_id"
   end
 
   create_table "quality_tests", force: :cascade do |t|
@@ -206,11 +240,16 @@ ActiveRecord::Schema[8.0].define(version: 2025_12_31_110425) do
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "material_bom_components", "materials"
   add_foreign_key "material_bom_components", "materials", column: "component_material_id"
+  add_foreign_key "material_process_steps", "materials"
+  add_foreign_key "material_process_steps", "process_steps"
   add_foreign_key "material_quality_tests", "materials"
   add_foreign_key "material_quality_tests", "quality_tests"
   add_foreign_key "materials", "tenants"
   add_foreign_key "materials", "unit_of_measurements", column: "procurement_unit_id"
   add_foreign_key "materials", "unit_of_measurements", column: "sale_unit_id"
+  add_foreign_key "process_step_quality_tests", "process_steps"
+  add_foreign_key "process_step_quality_tests", "quality_tests"
+  add_foreign_key "process_steps", "tenants"
   add_foreign_key "quality_tests", "tenants"
   add_foreign_key "sub_functionalities", "functionalities"
   add_foreign_key "subscriptions", "tenants"

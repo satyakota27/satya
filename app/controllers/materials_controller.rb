@@ -72,10 +72,32 @@ class MaterialsController < ApplicationController
     }
   end
 
+  def process_steps_search
+    authorize! :read, Material
+    query = params[:q] || ''
+    @process_steps = ProcessStep.searchable(query).limit(10)
+    
+    render json: {
+      process_steps: @process_steps.map { |ps| 
+        { 
+          id: ps.id, 
+          process_code: ps.process_code, 
+          description: ps.description,
+          estimated_days: ps.estimated_days,
+          estimated_hours: ps.estimated_hours,
+          estimated_minutes: ps.estimated_minutes,
+          estimated_seconds: ps.estimated_seconds,
+          has_documents: ps.documents.attached?
+        } 
+      }
+    }
+  end
+
   def show
     authorize! :read, @material
     @bom_components = @material.material_bom_components.includes(:component_material) if @material.has_bom
     @material_quality_tests = @material.material_quality_tests.includes(:quality_test)
+    @material_process_steps = @material.material_process_steps.includes(:process_step)
   end
 
   def new
@@ -109,6 +131,9 @@ class MaterialsController < ApplicationController
       
       # Handle Quality Tests
       handle_quality_tests(@material, params)
+      
+      # Handle Process Steps
+      handle_process_steps(@material, params)
       
       redirect_to @material, notice: 'Material was successfully created.'
     else
@@ -177,6 +202,9 @@ class MaterialsController < ApplicationController
       
       # Handle Quality Tests
       handle_quality_tests(@material, params)
+      
+      # Handle Process Steps
+      handle_process_steps(@material, params)
       
       notice_message = if was_rejected
         'Material has been updated and moved back to draft state. Please resubmit for approval.'
@@ -250,7 +278,7 @@ class MaterialsController < ApplicationController
       :shelf_life_hours, :shelf_life_minutes, :shelf_life_seconds, 
       :has_minimum_stock_value, :minimum_stock_value, :has_minimum_reorder_value, :minimum_reorder_value,
       :state, :approver_comments, :rejected_by_id, :rejected_at, :approved_by_id, :approved_at,
-      quality_test_documents: {})
+      quality_test_documents: {}, process_step_ids: [])
   end
 
   def handle_quality_tests(material, params)
@@ -283,6 +311,26 @@ class MaterialsController < ApplicationController
       end
       
       material_quality_test.save!
+    end
+  end
+
+  def handle_process_steps(material, params)
+    return unless params[:material].present?
+    
+    process_step_ids = params[:material][:process_step_ids] || []
+    
+    # Remove all existing process steps first
+    material.material_process_steps.destroy_all
+    
+    # Associate process steps with material
+    process_step_ids.each do |step_id|
+      next if step_id.blank?
+      
+      process_step = ProcessStep.find_by(id: step_id)
+      next unless process_step
+      
+      # Create material process step association
+      material.material_process_steps.create(process_step: process_step)
     end
   end
 end

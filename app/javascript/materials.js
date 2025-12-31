@@ -145,6 +145,17 @@ function initMaterials() {
       return;
     }
     
+    // Check if this material is already added in another row
+    const allRows = document.querySelectorAll('.bom-component-row.bom-component-added');
+    for (let otherRow of allRows) {
+      if (otherRow === row) continue;
+      const otherHiddenInput = otherRow.querySelector('.bom-material-id');
+      if (otherHiddenInput && otherHiddenInput.value === hiddenInput.value) {
+        alert('This material has already been added as a BOM component.');
+        return;
+      }
+    }
+    
     // Mark as added
     row.classList.add('bom-component-added');
     
@@ -426,7 +437,24 @@ function initMaterialAutocomplete(input) {
           dropdown.style.width = input.offsetWidth + 'px';
           dropdown.setAttribute('data-autocomplete-dropdown', 'true');
           
+          // Get list of already added material IDs to filter them out (only for BOM searches)
+          const addedMaterialIds = [];
+          if (isBomSearch) {
+            const allBomRows = document.querySelectorAll('.bom-component-row.bom-component-added');
+            allBomRows.forEach(addedRow => {
+              const addedHiddenInput = addedRow.querySelector('.bom-material-id');
+              if (addedHiddenInput && addedHiddenInput.value) {
+                addedMaterialIds.push(addedHiddenInput.value.toString());
+              }
+            });
+          }
+          
           data.materials.forEach(function(material) {
+            // Skip if this material is already added (only for BOM searches)
+            if (isBomSearch && addedMaterialIds.includes(material.id.toString())) {
+              return;
+            }
+            
             const item = document.createElement('div');
             item.className = 'cursor-pointer select-none relative py-2 pl-3 pr-9 hover:bg-indigo-50';
             item.innerHTML = `
@@ -435,6 +463,22 @@ function initMaterialAutocomplete(input) {
             `;
             item.addEventListener('click', function(e) {
               e.stopPropagation();
+              
+              // Double-check if material is already added (for BOM searches)
+              if (isBomSearch) {
+                const currentRow = input.closest('.bom-component-row');
+                const allBomRows = document.querySelectorAll('.bom-component-row.bom-component-added');
+                for (let otherRow of allBomRows) {
+                  if (otherRow === currentRow) continue;
+                  const otherHiddenInput = otherRow.querySelector('.bom-material-id');
+                  if (otherHiddenInput && otherHiddenInput.value === material.id.toString()) {
+                    alert('This material has already been added as a BOM component.');
+                    cleanup();
+                    return;
+                  }
+                }
+              }
+              
               input.value = `${material.material_code || 'Draft'} - ${material.description}`;
               if (hiddenInput) {
                 hiddenInput.value = material.id;
@@ -834,8 +878,9 @@ function initMaterialSubmenu() {
   // Check if submenu should be expanded based on current path or saved state
   const isOnUnitsPage = window.location.pathname.includes('unit-of-measurements');
   const isOnQualityTestsPage = window.location.pathname.includes('quality-tests');
+  const isOnProcessStepsPage = window.location.pathname.includes('process-steps');
   const savedState = localStorage.getItem('material-submenu-expanded');
-  const shouldExpand = isOnUnitsPage || isOnQualityTestsPage || savedState === 'true';
+  const shouldExpand = isOnUnitsPage || isOnQualityTestsPage || isOnProcessStepsPage || savedState === 'true';
   
   if (shouldExpand) {
     submenu.classList.remove('hidden');
@@ -878,7 +923,7 @@ function initMaterialWizard() {
   if (!wizard) return; // Only initialize if wizard exists
   
   let currentStep = 1;
-  const totalSteps = 4;
+  const totalSteps = 5;
   const prevBtn = document.getElementById('wizard-prev-btn');
   const nextBtn = document.getElementById('wizard-next-btn');
   const submitBtn = document.getElementById('wizard-submit-btn');
@@ -957,12 +1002,24 @@ function initMaterialWizard() {
       }
     }
     
-    if (nextBtn && submitBtn) {
+    // In step 5 (last step), hide Next button and show Submit button
+    // In all other steps, show Next button and hide Submit button
+    if (nextBtn) {
       if (step === totalSteps) {
+        // Step 5: Hide Next button
         nextBtn.classList.add('hidden');
+      } else {
+        // Steps 1-4: Show Next button
+        nextBtn.classList.remove('hidden');
+      }
+    }
+    
+    if (submitBtn) {
+      if (step === totalSteps) {
+        // Step 5: Show Submit button
         submitBtn.classList.remove('hidden');
       } else {
-        nextBtn.classList.remove('hidden');
+        // Steps 1-4: Hide Submit button
         submitBtn.classList.add('hidden');
       }
     }
@@ -1029,14 +1086,31 @@ function initMaterialWizard() {
   // Initialize first step
   showStep(1);
   
-  // Initialize quality tests when step 4 is shown
+  // Initialize quality tests when step 4 is shown, process steps when step 5 is shown
   const originalShowStep = showStep;
   showStep = function(step) {
     originalShowStep(step);
+    
+    // Ensure buttons are correctly shown/hidden for step 5
+    if (step === totalSteps) {
+      // Force hide Next button and show Submit button for step 5
+      if (nextBtn) {
+        nextBtn.classList.add('hidden');
+      }
+      if (submitBtn) {
+        submitBtn.classList.remove('hidden');
+      }
+    }
+    
     if (step === 4) {
       // Re-initialize quality tests when step 4 is shown
       setTimeout(function() {
         initQualityTests();
+      }, 100);
+    } else if (step === 5) {
+      // Re-initialize process steps when step 5 is shown
+      setTimeout(function() {
+        initProcessSteps();
       }, 100);
     }
   };
@@ -1120,8 +1194,8 @@ function initQualityTests() {
           
           if (testSearch && mqt.quality_test) {
             testSearch.value = `${mqt.quality_test.test_number} - ${mqt.quality_test.description}`;
-            testSearch.disabled = true;
-            testSearch.classList.add('bg-gray-100', 'cursor-not-allowed');
+            testSearch.setAttribute('readonly', 'readonly');
+            testSearch.classList.add('bg-gray-100', 'text-gray-600');
           }
           if (hiddenInput && mqt.quality_test) {
             hiddenInput.value = mqt.quality_test.id;
@@ -1131,21 +1205,23 @@ function initQualityTests() {
             materialQualityTestIdInput.value = mqt.id;
           }
           
-          // Mark as added
-          testRow.dataset.added = 'true';
-          const addBtn = testRow.querySelector('.add-quality-test');
-          const removeBtn = testRow.querySelector('.remove-quality-test');
-          const removeRowBtn = testRow.querySelector('.remove-row-btn');
-          if (addBtn) addBtn.classList.add('hidden');
-          if (removeBtn) removeBtn.classList.remove('hidden');
-          if (removeRowBtn) removeRowBtn.classList.add('hidden');
+          // Mark as added and replace button with Edit/Remove
+          testRow.classList.add('quality-test-added');
+          const buttonContainer = testRow.querySelector('.flex-shrink-0');
+          if (buttonContainer) {
+            buttonContainer.innerHTML = `
+              <div class="flex gap-2">
+                <button type="button" class="edit-quality-test w-full sm:w-auto inline-flex items-center justify-center px-3 py-2 border border-indigo-300 shadow-sm text-sm font-medium rounded-md text-indigo-700 bg-indigo-50 hover:bg-indigo-100">
+                  Edit
+                </button>
+                <button type="button" class="remove-quality-test w-full sm:w-auto inline-flex items-center justify-center px-3 py-2 border border-red-300 shadow-sm text-sm font-medium rounded-md text-red-700 bg-red-50 hover:bg-red-100">
+                  Remove
+                </button>
+              </div>
+            `;
+          }
           
           initQualityTestRow(testRow);
-          
-          // Show summary for existing test
-          if (testRow.showQualityTestSummary && mqt.quality_test) {
-            testRow.showQualityTestSummary(testRow, mqt.quality_test);
-          }
         });
       }
     })
@@ -1157,70 +1233,167 @@ function initQualityTests() {
   addTestBtn.addEventListener('click', function(e) {
     e.preventDefault();
     e.stopPropagation();
+    
+    // Prevent duplicate row creation
+    const existingEmptyRows = testsList.querySelectorAll('.quality-test-row:not(.quality-test-added)');
+    if (existingEmptyRows.length > 0) {
+      // Focus on the first empty row instead of creating a new one
+      const firstEmptyRow = existingEmptyRows[0];
+      const searchInput = firstEmptyRow.querySelector('.quality-test-search');
+      if (searchInput) {
+        searchInput.focus();
+      }
+      return;
+    }
+    
     window.qualityTestCounter++;
     const testRow = createQualityTestRow(window.qualityTestCounter);
     testsList.appendChild(testRow);
     initQualityTestRow(testRow);
+    
+    // Focus on the search input for better UX
+    const searchInput = testRow.querySelector('.quality-test-search');
+    if (searchInput) {
+      searchInput.focus();
+    }
   });
   
   function createQualityTestRow(counter) {
     const row = document.createElement('div');
-    row.className = 'quality-test-row border border-gray-200 rounded-lg p-4 bg-gray-50';
+    row.className = 'quality-test-row flex flex-col sm:flex-row gap-4 items-stretch sm:items-end p-4 bg-gray-50 rounded-md';
     row.dataset.testIndex = counter;
-    row.dataset.added = 'false';
     row.innerHTML = `
-      <div class="space-y-4">
-        <div class="flex items-center gap-4">
-          <div class="flex-1">
-            <label class="block text-sm font-medium text-gray-700 mb-1">Quality Test (Search by ID or Description)</label>
-            <input type="text" 
-                   class="quality-test-search shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md" 
-                   placeholder="Search by test number or description..."
-                   autocomplete="off" />
-            <input type="hidden" class="quality-test-id" />
-            <input type="hidden" class="material-quality-test-id" />
-          </div>
-          <div class="flex-shrink-0 pt-6 flex gap-2">
-            <button type="button" class="add-quality-test inline-flex items-center px-3 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700">
-              Add Test
-            </button>
-            <button type="button" class="remove-quality-test hidden inline-flex items-center px-3 py-2 border border-red-300 shadow-sm text-sm font-medium rounded-md text-red-700 bg-red-50 hover:bg-red-100">
-              Remove
-            </button>
-            <button type="button" class="remove-row-btn inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
-              Remove Row
-            </button>
-          </div>
-        </div>
-        <div class="quality-test-summary hidden bg-white border border-gray-200 rounded-md p-4">
-          <!-- Summary will be populated here -->
-        </div>
+      <div class="flex-1 min-w-0">
+        <label class="block text-sm font-medium text-gray-700 mb-1">Quality test description/code</label>
+        <input type="text" 
+               class="quality-test-search shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md" 
+               placeholder="Search approved quality tests by code or description..."
+               autocomplete="off" />
+        <input type="hidden" class="quality-test-id" />
+        <input type="hidden" class="material-quality-test-id" />
+      </div>
+      <div class="flex-shrink-0">
+        <button type="button" class="add-quality-test-btn w-full sm:w-auto inline-flex items-center justify-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700">
+          Add
+        </button>
       </div>
     `;
     return row;
   }
   
+  // Function to add a quality test (marks it as added)
+  function addQualityTest(row) {
+    const testSearch = row.querySelector('.quality-test-search');
+    const hiddenInput = row.querySelector('.quality-test-id');
+    
+    // Validate that quality test is selected
+    if (!hiddenInput.value) {
+      alert('Please select a quality test before adding.');
+      return;
+    }
+    
+    // Check if this test is already added in another row
+    const allRows = document.querySelectorAll('.quality-test-row.quality-test-added');
+    for (let otherRow of allRows) {
+      if (otherRow === row) continue;
+      const otherHiddenInput = otherRow.querySelector('.quality-test-id');
+      if (otherHiddenInput && otherHiddenInput.value === hiddenInput.value) {
+        alert('This quality test has already been added.');
+        return;
+      }
+    }
+    
+    // Mark as added
+    row.classList.add('quality-test-added');
+    
+    // Grey out input
+    testSearch.classList.add('bg-gray-100', 'text-gray-600');
+    testSearch.setAttribute('readonly', 'readonly');
+    
+    // Replace Add button with Edit and Remove buttons
+    const buttonContainer = row.querySelector('.flex-shrink-0');
+    buttonContainer.innerHTML = `
+      <div class="flex gap-2">
+        <button type="button" class="edit-quality-test w-full sm:w-auto inline-flex items-center justify-center px-3 py-2 border border-indigo-300 shadow-sm text-sm font-medium rounded-md text-indigo-700 bg-indigo-50 hover:bg-indigo-100">
+          Edit
+        </button>
+        <button type="button" class="remove-quality-test w-full sm:w-auto inline-flex items-center justify-center px-3 py-2 border border-red-300 shadow-sm text-sm font-medium rounded-md text-red-700 bg-red-50 hover:bg-red-100">
+          Remove
+        </button>
+      </div>
+    `;
+    
+    // Add event handlers
+    buttonContainer.querySelector('.edit-quality-test').addEventListener('click', function() {
+      editQualityTest(row);
+    });
+    buttonContainer.querySelector('.remove-quality-test').addEventListener('click', function() {
+      removeQualityTest(row);
+    });
+    
+    // Ensure hidden input is included in form submission
+    if (hiddenInput) {
+      hiddenInput.name = 'material[quality_test_ids][]';
+    }
+  }
+
+  // Function to edit a quality test
+  function editQualityTest(row) {
+    const testSearch = row.querySelector('.quality-test-search');
+    const hiddenInput = row.querySelector('.quality-test-id');
+    
+    // Remove added state
+    row.classList.remove('quality-test-added');
+    
+    // Enable input
+    testSearch.classList.remove('bg-gray-100', 'text-gray-600');
+    testSearch.removeAttribute('readonly');
+    
+    // Replace Edit and Remove buttons with Add button
+    const buttonContainer = row.querySelector('.flex-shrink-0');
+    buttonContainer.innerHTML = `
+      <button type="button" class="add-quality-test-btn w-full sm:w-auto inline-flex items-center justify-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700">
+        Add
+      </button>
+    `;
+    
+    // Add event handler
+    buttonContainer.querySelector('.add-quality-test-btn').addEventListener('click', function() {
+      addQualityTest(row);
+    });
+    
+    // Re-initialize autocomplete - clone the input to remove old event listeners
+    const currentValue = testSearch.value;
+    const currentTestId = hiddenInput ? hiddenInput.value : '';
+    const newInput = testSearch.cloneNode(true);
+    newInput.value = currentValue;
+    newInput.removeAttribute('data-autocomplete-initialized'); // Reset initialization flag
+    testSearch.parentNode.replaceChild(newInput, testSearch);
+    
+    // Restore the test ID if it was set
+    const newHiddenInput = row.querySelector('.quality-test-id');
+    if (currentTestId && newHiddenInput) {
+      newHiddenInput.value = currentTestId;
+    }
+    
+    // Initialize autocomplete for the new input
+    initQualityTestAutocomplete(newInput, row);
+    
+    // Focus on the search input for better UX
+    newInput.focus();
+  }
+
+  // Function to remove a quality test
+  function removeQualityTest(row) {
+    if (confirm('Are you sure you want to remove this quality test?')) {
+      row.remove();
+    }
+  }
+
   function initQualityTestRow(row) {
     const testSearch = row.querySelector('.quality-test-search');
     const hiddenInput = row.querySelector('.quality-test-id');
-    const materialQualityTestIdInput = row.querySelector('.material-quality-test-id');
-    const addBtn = row.querySelector('.add-quality-test');
-    const removeBtn = row.querySelector('.remove-quality-test');
-    const removeRowBtn = row.querySelector('.remove-row-btn');
-    
-    // Get material ID from form or URL
-    const getMaterialId = () => {
-      const form = testSearch.closest('form');
-      if (form) {
-        const idField = form.querySelector('input[name="material[id]"]');
-        if (idField && idField.value) {
-          return idField.value;
-        }
-      }
-      // Try to get from URL if editing
-      const match = window.location.pathname.match(/materials\/(\d+)/);
-      return match ? match[1] : null;
-    };
+    const addBtn = row.querySelector('.add-quality-test-btn');
     
     // Initialize quality test search autocomplete
     if (testSearch && !testSearch.dataset.autocompleteInitialized) {
@@ -1228,298 +1401,28 @@ function initQualityTests() {
       testSearch.dataset.autocompleteInitialized = 'true';
     }
     
-    // Handle add button - persist test immediately
+    // Handle add button
     if (addBtn) {
       addBtn.addEventListener('click', function() {
-        const testId = hiddenInput ? hiddenInput.value : '';
-        if (!testId) {
-          alert('Please select a quality test first.');
-          return;
-        }
-        
-        const materialId = getMaterialId();
-        if (!materialId) {
-          // Material not yet created, just mark as added for form submission
-          addTestToForm(testId);
-          return;
-        }
-        
-        // Check if this test is already added in another row
-        const allRows = document.querySelectorAll('.quality-test-row[data-added="true"]');
-        for (let otherRow of allRows) {
-          if (otherRow === row) continue;
-          const otherHiddenInput = otherRow.querySelector('.quality-test-id');
-          if (otherHiddenInput && otherHiddenInput.value === testId) {
-            alert('This quality test has already been added.');
-            return;
-          }
-        }
-        
-        // Persist immediately via AJAX
-        addBtn.disabled = true;
-        addBtn.textContent = 'Adding...';
-        
-        fetch(`/materials/${materialId}/material_quality_tests`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content,
-            'Accept': 'application/json'
-          },
-          body: JSON.stringify({
-            quality_test_id: testId
-          })
-        })
-        .then(response => {
-          if (!response.ok) {
-            return response.json().then(data => {
-              throw new Error(data.error || 'Failed to add quality test');
-            });
-          }
-          return response.json();
-        })
-        .then(data => {
-          if (data.success || data.id) {
-            // Mark as added
-            row.dataset.added = 'true';
-            testSearch.disabled = true;
-            testSearch.classList.add('bg-gray-100', 'cursor-not-allowed');
-            addBtn.classList.add('hidden');
-            removeBtn.classList.remove('hidden');
-            removeRowBtn.classList.add('hidden');
-            
-            // Store the material_quality_test ID for removal
-            if (materialQualityTestIdInput && data.id) {
-              materialQualityTestIdInput.value = data.id;
-            }
-            
-            // Ensure hidden input is included in form submission
-            if (hiddenInput) {
-              hiddenInput.name = 'material[quality_test_ids][]';
-            }
-            
-            // Show summary with test details
-            if (data.quality_test && row.showQualityTestSummary) {
-              row.showQualityTestSummary(row, data.quality_test);
-            }
-          } else {
-            throw new Error('Unexpected response format');
-          }
-        })
-        .catch(error => {
-          console.error('Error adding quality test:', error);
-          alert(`Failed to add quality test: ${error.message}`);
-          addBtn.disabled = false;
-          addBtn.textContent = 'Add Test';
-        });
-      });
-    }
-    
-    // Handle remove button - remove persisted association
-    if (removeBtn) {
-      removeBtn.addEventListener('click', function() {
-        if (!confirm('Are you sure you want to remove this quality test from the material?')) {
-          return;
-        }
-        
-        const materialId = getMaterialId();
-        const materialQualityTestId = materialQualityTestIdInput ? materialQualityTestIdInput.value : '';
-        
-        if (materialId && materialQualityTestId) {
-          // Remove persisted association
-          removeBtn.disabled = true;
-          removeBtn.textContent = 'Removing...';
-          
-          fetch(`/materials/${materialId}/material_quality_tests/${materialQualityTestId}`, {
-            method: 'DELETE',
-            headers: {
-              'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content,
-              'Accept': 'application/json'
-            }
-          })
-          .then(response => {
-            if (!response.ok) {
-              throw new Error('Failed to remove quality test');
-            }
-            return response.json();
-          })
-          .then(data => {
-            // Reset row state
-            row.dataset.added = 'false';
-            testSearch.disabled = false;
-            testSearch.value = '';
-            testSearch.classList.remove('bg-gray-100', 'cursor-not-allowed');
-            if (hiddenInput) {
-              hiddenInput.value = '';
-              hiddenInput.removeAttribute('name');
-            }
-            if (materialQualityTestIdInput) {
-              materialQualityTestIdInput.value = '';
-            }
-            // Hide summary
-            const summaryDiv = row.querySelector('.quality-test-summary');
-            if (summaryDiv) {
-              summaryDiv.classList.add('hidden');
-              summaryDiv.innerHTML = '';
-            }
-            addBtn.classList.remove('hidden');
-            addBtn.disabled = false;
-            addBtn.textContent = 'Add Test';
-            removeBtn.classList.add('hidden');
-            removeRowBtn.classList.remove('hidden');
-          })
-          .catch(error => {
-            console.error('Error removing quality test:', error);
-            alert('Failed to remove quality test. Please try again.');
-            removeBtn.disabled = false;
-            removeBtn.textContent = 'Remove';
-          });
-        } else {
-          // Material not yet created, just reset the form
-          row.dataset.added = 'false';
-          testSearch.disabled = false;
-          testSearch.value = '';
-          testSearch.classList.remove('bg-gray-100', 'cursor-not-allowed');
-          if (hiddenInput) {
-            hiddenInput.value = '';
-            hiddenInput.removeAttribute('name');
-          }
-          // Hide summary
-          const summaryDiv = row.querySelector('.quality-test-summary');
-          if (summaryDiv) {
-            summaryDiv.classList.add('hidden');
-            summaryDiv.innerHTML = '';
-          }
-          addBtn.classList.remove('hidden');
-          removeBtn.classList.add('hidden');
-          removeRowBtn.classList.remove('hidden');
-        }
-      });
-    }
-    
-    // Function to add test to form (for new materials not yet persisted)
-    function addTestToForm(testId) {
-      // Check if this test is already added in another row
-      const allRows = document.querySelectorAll('.quality-test-row[data-added="true"]');
-      for (let otherRow of allRows) {
-        if (otherRow === row) continue;
-        const otherHiddenInput = otherRow.querySelector('.quality-test-id');
-        if (otherHiddenInput && otherHiddenInput.value === testId) {
-          alert('This quality test has already been added.');
-          testSearch.value = '';
-          if (hiddenInput) hiddenInput.value = '';
-          return false;
-        }
-      }
-      
-      // Mark as added
-      row.dataset.added = 'true';
-      testSearch.disabled = true;
-      testSearch.classList.add('bg-gray-100', 'cursor-not-allowed');
-      addBtn.classList.add('hidden');
-      removeBtn.classList.remove('hidden');
-      removeRowBtn.classList.add('hidden');
-      
-      // Ensure hidden input is included in form submission
-      if (hiddenInput) {
-        hiddenInput.name = 'material[quality_test_ids][]';
-      }
-      
-      return true;
-    }
-    
-    // Store addTestToForm function on row for use in autocomplete
-    row.addTestToForm = addTestToForm;
-    
-    // Function to show quality test summary
-    function showQualityTestSummary(row, testData) {
-      const summaryDiv = row.querySelector('.quality-test-summary');
-      if (!summaryDiv) return;
-      
-      let summaryHTML = `
-        <div class="space-y-3">
-          <div class="flex items-start justify-between">
-            <div>
-              <h4 class="text-sm font-semibold text-gray-900">${testData.test_number}</h4>
-              <p class="mt-1 text-sm text-gray-600">${testData.description || ''}</p>
-            </div>
-          </div>
-          <div class="border-t border-gray-200 pt-3">
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <span class="text-xs font-medium text-gray-500">Result Type:</span>
-                <span class="ml-2 text-sm text-gray-900 capitalize">${testData.result_type || 'Boolean'}</span>
-              </div>
-      `;
-      
-      if (testData.result_type === 'range' && (testData.lower_limit !== null || testData.upper_limit !== null)) {
-        summaryHTML += `
-              <div>
-                <span class="text-xs font-medium text-gray-500">Range:</span>
-                <span class="ml-2 text-sm text-gray-900">
-                  ${testData.lower_limit !== null ? testData.lower_limit : 'N/A'} - ${testData.upper_limit !== null ? testData.upper_limit : 'N/A'}
-                </span>
-              </div>
-        `;
-      } else if (testData.result_type === 'absolute' && testData.absolute_value !== null) {
-        summaryHTML += `
-              <div>
-                <span class="text-xs font-medium text-gray-500">Value:</span>
-                <span class="ml-2 text-sm text-gray-900">${testData.absolute_value}</span>
-              </div>
-        `;
-      }
-      
-      if (testData.has_documents) {
-        summaryHTML += `
-              <div class="sm:col-span-2">
-                <span class="text-xs font-medium text-gray-500">Documents:</span>
-                <span class="ml-2 text-sm text-green-600">✓ Attached</span>
-              </div>
-        `;
-      }
-      
-      summaryHTML += `
-            </div>
-          </div>
-        </div>
-      `;
-      
-      summaryDiv.innerHTML = summaryHTML;
-      summaryDiv.classList.remove('hidden');
-    }
-    
-    // Store showQualityTestSummary function on row
-    row.showQualityTestSummary = showQualityTestSummary;
-    
-    // Handle remove row button
-    if (removeRowBtn) {
-      removeRowBtn.addEventListener('click', function() {
-        if (!confirm('Are you sure you want to remove this row?')) {
-          return;
-        }
-        
-        // If test is persisted, remove it first
-        const materialId = getMaterialId();
-        const materialQualityTestId = materialQualityTestIdInput ? materialQualityTestIdInput.value : '';
-        
-        if (materialId && materialQualityTestId) {
-          fetch(`/materials/${materialId}/material_quality_tests/${materialQualityTestId}`, {
-            method: 'DELETE',
-            headers: {
-              'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content,
-              'Accept': 'application/json'
-            }
-          })
-          .catch(error => {
-            console.error('Error removing quality test:', error);
-          });
-        }
-        
-        row.remove();
+        addQualityTest(row);
       });
     }
   }
+  
+  // Handle Edit and Remove buttons for existing tests (delegated event listeners)
+  document.addEventListener('click', function(e) {
+    if (e.target.classList.contains('edit-quality-test')) {
+      const row = e.target.closest('.quality-test-row');
+      if (row) {
+        editQualityTest(row);
+      }
+    } else if (e.target.classList.contains('remove-quality-test')) {
+      const row = e.target.closest('.quality-test-row');
+      if (row) {
+        removeQualityTest(row);
+      }
+    }
+  });
   
   function initQualityTestAutocomplete(searchInput, row) {
     let dropdown = null;
@@ -1528,7 +1431,7 @@ function initQualityTests() {
     
     searchInput.addEventListener('input', function() {
       // Don't search if the row is already added
-      if (row.dataset.added === 'true') return;
+      if (row.classList.contains('quality-test-added')) return;
       
       const query = this.value.trim();
       
@@ -1554,7 +1457,7 @@ function initQualityTests() {
           
           // Get list of already added test IDs to filter them out
           const addedTestIds = [];
-          const allRows = document.querySelectorAll('.quality-test-row[data-added="true"]');
+          const allRows = document.querySelectorAll('.quality-test-row.quality-test-added');
           allRows.forEach(addedRow => {
             const addedHiddenInput = addedRow.querySelector('.quality-test-id');
             if (addedHiddenInput && addedHiddenInput.value) {
@@ -1757,7 +1660,7 @@ function initQualityTests() {
           // Test is selected, Add button will be visible for user to click
           // Check if this test is already added elsewhere
           if (row) {
-            const allRows = document.querySelectorAll('.quality-test-row[data-added="true"]');
+            const allRows = document.querySelectorAll('.quality-test-row.quality-test-added');
             let alreadyAdded = false;
             for (let otherRow of allRows) {
               if (otherRow === row) continue;
@@ -1771,10 +1674,6 @@ function initQualityTests() {
               alert('This quality test has already been added in another row.');
               if (hiddenInput) hiddenInput.value = '';
               if (searchInput) searchInput.value = '';
-            } else {
-              // Show Add button if not already added
-              const addBtn = row.querySelector('.add-quality-test');
-              if (addBtn) addBtn.classList.remove('hidden');
             }
           }
           
@@ -1796,6 +1695,399 @@ function initQualityTests() {
       });
     });
   }
+}
+
+function initProcessSteps() {
+  const addStepBtn = document.getElementById('add-process-step');
+  const stepsList = document.getElementById('process-steps-list');
+  
+  if (!addStepBtn || !stepsList) return;
+  
+  // Prevent duplicate initialization
+  if (addStepBtn.dataset.processStepsInitialized === 'true') {
+    return;
+  }
+  addStepBtn.dataset.processStepsInitialized = 'true';
+  
+  // Use a shared counter that persists across calls
+  if (!window.processStepCounter) {
+    window.processStepCounter = 0;
+  }
+  
+  // Count existing step rows to continue numbering
+  const existingRows = stepsList.querySelectorAll('.process-step-row');
+  if (existingRows.length > 0) {
+    window.processStepCounter = existingRows.length;
+  }
+  
+  // Load existing process steps if editing
+  if (stepsList && stepsList.dataset.materialId) {
+    const materialId = stepsList.dataset.materialId;
+    fetch(`/materials/${materialId}/material_process_steps.json`, {
+      headers: {
+        'Accept': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest'
+      }
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.material_process_steps && data.material_process_steps.length > 0) {
+        data.material_process_steps.forEach((mps, index) => {
+          window.processStepCounter++;
+          const stepRow = createProcessStepRow(window.processStepCounter);
+          stepsList.appendChild(stepRow);
+          
+          // Populate with existing data
+          const stepSearch = stepRow.querySelector('.process-step-search');
+          const hiddenInput = stepRow.querySelector('.process-step-id');
+          const materialProcessStepIdInput = stepRow.querySelector('.material-process-step-id');
+          
+          if (stepSearch && mps.process_step) {
+            stepSearch.value = `${mps.process_step.process_code} - ${mps.process_step.description}`;
+            stepSearch.setAttribute('readonly', 'readonly');
+            stepSearch.classList.add('bg-gray-100', 'text-gray-600');
+          }
+          if (hiddenInput && mps.process_step) {
+            hiddenInput.value = mps.process_step.id;
+            hiddenInput.name = 'material[process_step_ids][]';
+          }
+          if (materialProcessStepIdInput && mps.id) {
+            materialProcessStepIdInput.value = mps.id;
+          }
+          
+          // Mark as added and replace button with Edit/Remove
+          stepRow.classList.add('process-step-added');
+          const buttonContainer = stepRow.querySelector('.flex-shrink-0');
+          if (buttonContainer) {
+            buttonContainer.innerHTML = `
+              <div class="flex gap-2">
+                <button type="button" class="edit-process-step w-full sm:w-auto inline-flex items-center justify-center px-3 py-2 border border-indigo-300 shadow-sm text-sm font-medium rounded-md text-indigo-700 bg-indigo-50 hover:bg-indigo-100">
+                  Edit
+                </button>
+                <button type="button" class="remove-process-step w-full sm:w-auto inline-flex items-center justify-center px-3 py-2 border border-red-300 shadow-sm text-sm font-medium rounded-md text-red-700 bg-red-50 hover:bg-red-100">
+                  Remove
+                </button>
+              </div>
+            `;
+          }
+          
+          initProcessStepRow(stepRow);
+        });
+      }
+    })
+    .catch(error => {
+      console.error('Error loading existing process steps:', error);
+    });
+  }
+  
+  addStepBtn.addEventListener('click', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    // Prevent duplicate row creation
+    const existingEmptyRows = stepsList.querySelectorAll('.process-step-row:not(.process-step-added)');
+    if (existingEmptyRows.length > 0) {
+      // Focus on the first empty row instead of creating a new one
+      const firstEmptyRow = existingEmptyRows[0];
+      const searchInput = firstEmptyRow.querySelector('.process-step-search');
+      if (searchInput) {
+        searchInput.focus();
+      }
+      return;
+    }
+    
+    window.processStepCounter++;
+    const stepRow = createProcessStepRow(window.processStepCounter);
+    stepsList.appendChild(stepRow);
+    initProcessStepRow(stepRow);
+    
+    // Focus on the search input for better UX
+    const searchInput = stepRow.querySelector('.process-step-search');
+    if (searchInput) {
+      searchInput.focus();
+    }
+  });
+  
+  function createProcessStepRow(counter) {
+    const row = document.createElement('div');
+    row.className = 'process-step-row flex flex-col sm:flex-row gap-4 items-stretch sm:items-end p-4 bg-gray-50 rounded-md';
+    row.dataset.stepIndex = counter;
+    row.innerHTML = `
+      <div class="flex-1 min-w-0">
+        <label class="block text-sm font-medium text-gray-700 mb-1">Process step description/code</label>
+        <input type="text" 
+               class="process-step-search shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md" 
+               placeholder="Search approved process steps by code or description..."
+               autocomplete="off" />
+        <input type="hidden" class="process-step-id" />
+        <input type="hidden" class="material-process-step-id" />
+      </div>
+      <div class="flex-shrink-0">
+        <button type="button" class="add-process-step-btn w-full sm:w-auto inline-flex items-center justify-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700">
+          Add
+        </button>
+      </div>
+    `;
+    return row;
+  }
+  
+  // Function to add a process step (marks it as added)
+  function addProcessStep(row) {
+    const stepSearch = row.querySelector('.process-step-search');
+    const hiddenInput = row.querySelector('.process-step-id');
+    
+    // Validate that process step is selected
+    if (!hiddenInput.value) {
+      alert('Please select a process step before adding.');
+      return;
+    }
+    
+    // Check if this step is already added in another row
+    const allRows = document.querySelectorAll('.process-step-row.process-step-added');
+    for (let otherRow of allRows) {
+      if (otherRow === row) continue;
+      const otherHiddenInput = otherRow.querySelector('.process-step-id');
+      if (otherHiddenInput && otherHiddenInput.value === hiddenInput.value) {
+        alert('This process step has already been added.');
+        return;
+      }
+    }
+    
+    // Mark as added
+    row.classList.add('process-step-added');
+    
+    // Grey out input
+    stepSearch.classList.add('bg-gray-100', 'text-gray-600');
+    stepSearch.setAttribute('readonly', 'readonly');
+    
+    // Replace Add button with Edit and Remove buttons
+    const buttonContainer = row.querySelector('.flex-shrink-0');
+    buttonContainer.innerHTML = `
+      <div class="flex gap-2">
+        <button type="button" class="edit-process-step w-full sm:w-auto inline-flex items-center justify-center px-3 py-2 border border-indigo-300 shadow-sm text-sm font-medium rounded-md text-indigo-700 bg-indigo-50 hover:bg-indigo-100">
+          Edit
+        </button>
+        <button type="button" class="remove-process-step w-full sm:w-auto inline-flex items-center justify-center px-3 py-2 border border-red-300 shadow-sm text-sm font-medium rounded-md text-red-700 bg-red-50 hover:bg-red-100">
+          Remove
+        </button>
+      </div>
+    `;
+    
+    // Add event handlers
+    buttonContainer.querySelector('.edit-process-step').addEventListener('click', function() {
+      editProcessStep(row);
+    });
+    buttonContainer.querySelector('.remove-process-step').addEventListener('click', function() {
+      removeProcessStep(row);
+    });
+    
+    // Ensure hidden input is included in form submission
+    if (hiddenInput) {
+      hiddenInput.name = 'material[process_step_ids][]';
+    }
+  }
+
+  // Function to edit a process step
+  function editProcessStep(row) {
+    const stepSearch = row.querySelector('.process-step-search');
+    const hiddenInput = row.querySelector('.process-step-id');
+    
+    // Remove added state
+    row.classList.remove('process-step-added');
+    
+    // Enable input
+    stepSearch.classList.remove('bg-gray-100', 'text-gray-600');
+    stepSearch.removeAttribute('readonly');
+    
+    // Replace Edit and Remove buttons with Add button
+    const buttonContainer = row.querySelector('.flex-shrink-0');
+    buttonContainer.innerHTML = `
+      <button type="button" class="add-process-step-btn w-full sm:w-auto inline-flex items-center justify-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700">
+        Add
+      </button>
+    `;
+    
+    // Add event handler
+    buttonContainer.querySelector('.add-process-step-btn').addEventListener('click', function() {
+      addProcessStep(row);
+    });
+    
+    // Re-initialize autocomplete - clone the input to remove old event listeners
+    const currentValue = stepSearch.value;
+    const currentStepId = hiddenInput ? hiddenInput.value : '';
+    const newInput = stepSearch.cloneNode(true);
+    newInput.value = currentValue;
+    newInput.removeAttribute('data-autocomplete-initialized'); // Reset initialization flag
+    stepSearch.parentNode.replaceChild(newInput, stepSearch);
+    
+    // Restore the step ID if it was set
+    const newHiddenInput = row.querySelector('.process-step-id');
+    if (currentStepId && newHiddenInput) {
+      newHiddenInput.value = currentStepId;
+    }
+    
+    // Initialize autocomplete for the new input
+    initProcessStepAutocomplete(newInput, row);
+    
+    // Focus on the search input for better UX
+    newInput.focus();
+  }
+
+  // Function to remove a process step
+  function removeProcessStep(row) {
+    if (confirm('Are you sure you want to remove this process step?')) {
+      row.remove();
+    }
+  }
+
+  function initProcessStepRow(row) {
+    const stepSearch = row.querySelector('.process-step-search');
+    const hiddenInput = row.querySelector('.process-step-id');
+    const addBtn = row.querySelector('.add-process-step-btn');
+    
+    // Initialize process step search autocomplete
+    if (stepSearch && !stepSearch.dataset.autocompleteInitialized) {
+      initProcessStepAutocomplete(stepSearch, row);
+      stepSearch.dataset.autocompleteInitialized = 'true';
+    }
+    
+    // Handle add button
+    if (addBtn) {
+      addBtn.addEventListener('click', function() {
+        addProcessStep(row);
+      });
+    }
+  }
+  
+  // Handle Edit and Remove buttons for existing steps (delegated event listeners)
+  document.addEventListener('click', function(e) {
+    if (e.target.classList.contains('edit-process-step')) {
+      const row = e.target.closest('.process-step-row');
+      if (row) {
+        editProcessStep(row);
+      }
+    } else if (e.target.classList.contains('remove-process-step')) {
+      const row = e.target.closest('.process-step-row');
+      if (row) {
+        removeProcessStep(row);
+      }
+    }
+  });
+  
+  function initProcessStepAutocomplete(searchInput, row) {
+    let dropdown = null;
+    let timeout = null;
+    const hiddenInput = row.querySelector('.process-step-id');
+    
+    searchInput.addEventListener('input', function() {
+      // Don't search if the row is already added
+      if (row.classList.contains('process-step-added')) return;
+      
+      const query = this.value.trim();
+      
+      clearTimeout(timeout);
+      
+      if (query.length < 2) {
+        if (dropdown) dropdown.remove();
+        dropdown = null;
+        if (hiddenInput) hiddenInput.value = '';
+        return;
+      }
+      
+      timeout = setTimeout(function() {
+        fetch(`/materials/process_steps/search.json?q=${encodeURIComponent(query)}`, {
+          headers: {
+            'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+          }
+        })
+        .then(response => response.json())
+        .then(data => {
+          if (dropdown) dropdown.remove();
+          
+          // Get list of already added step IDs to filter them out
+          const addedStepIds = [];
+          const allRows = document.querySelectorAll('.process-step-row.process-step-added');
+          allRows.forEach(addedRow => {
+            const addedHiddenInput = addedRow.querySelector('.process-step-id');
+            if (addedHiddenInput && addedHiddenInput.value) {
+              addedStepIds.push(addedHiddenInput.value);
+            }
+          });
+          
+          if (data.process_steps && data.process_steps.length > 0) {
+            dropdown = document.createElement('div');
+            dropdown.className = 'absolute z-10 mt-1 w-full bg-white shadow-lg max-h-60 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none sm:text-sm';
+            dropdown.style.position = 'absolute';
+            dropdown.style.top = '100%';
+            dropdown.style.left = '0';
+            dropdown.style.width = '100%';
+            
+            data.process_steps.forEach(step => {
+              // Skip if this step is already added
+              if (addedStepIds.includes(step.id.toString())) {
+                return;
+              }
+              
+              const item = document.createElement('div');
+              item.className = 'cursor-pointer select-none relative py-2 pl-3 pr-9 hover:bg-indigo-50';
+              item.innerHTML = `
+                <div class="flex flex-col">
+                  <span class="font-medium text-gray-900">${step.process_code}</span>
+                  <span class="text-sm text-gray-500">${step.description}</span>
+                </div>
+              `;
+              item.addEventListener('click', function() {
+                searchInput.value = `${step.process_code} - ${step.description}`;
+                if (hiddenInput) hiddenInput.value = step.id;
+                dropdown.remove();
+                dropdown = null;
+              });
+              dropdown.appendChild(item);
+            });
+            
+            if (dropdown.children.length > 0) {
+              searchInput.parentElement.style.position = 'relative';
+              searchInput.parentElement.appendChild(dropdown);
+            } else {
+              dropdown = null;
+            }
+          } else {
+            dropdown = null;
+          }
+        })
+        .catch(error => {
+          console.error('Error searching process steps:', error);
+          if (dropdown) dropdown.remove();
+          dropdown = null;
+        });
+      }, 300);
+    });
+    
+    // Close dropdown when clicking outside
+    document.addEventListener('click', function(event) {
+      if (dropdown && !searchInput.contains(event.target) && !dropdown.contains(event.target)) {
+        dropdown.remove();
+        dropdown = null;
+      }
+    });
+  }
+  
+  // Handle process step creation modal
+  const modal = document.getElementById('process-step-modal');
+  const modalForm = document.getElementById('process-step-form');
+  const cancelModalBtn = document.getElementById('cancel-process-step-modal');
+  const createNewBtn = document.getElementById('create-new-process-step');
+  
+  if (modal && cancelModalBtn) {
+    cancelModalBtn.addEventListener('click', function() {
+      modal.classList.add('hidden');
+      if (modalForm) modalForm.reset();
+    });
+  }
+  
+  // Add "Create New" button functionality if needed
+  // This would be similar to quality tests - allowing creation on the fly
 }
 
 export default initMaterials;

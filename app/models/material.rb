@@ -13,6 +13,8 @@ class Material < ApplicationRecord
   has_many :bom_components, through: :material_bom_components, source: :component_material
   has_many :material_quality_tests, dependent: :destroy
   has_many :quality_tests, through: :material_quality_tests
+  has_many :material_process_steps, dependent: :destroy
+  has_many :process_steps, through: :material_process_steps
 
   enum :state, { draft: 'draft', rejected: 'rejected', approved: 'approved' }
   

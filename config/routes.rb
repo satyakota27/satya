@@ -17,6 +17,7 @@ Rails.application.routes.draw do
     collection do
       get :search
       get 'quality_tests/search', to: 'materials#quality_tests_search', as: 'quality_tests_search'
+      get 'process_steps/search', to: 'materials#process_steps_search', as: 'process_steps_search'
       post 'unit-of-measurements', to: 'unit_of_measurements#create_standalone', as: 'create_unit_standalone_materials'
     end
     member do
@@ -25,6 +26,7 @@ Rails.application.routes.draw do
     end
     resources :material_bom_components, only: [:create, :destroy]
     resources :material_quality_tests, only: [:index, :create, :destroy]
+    resources :material_process_steps, only: [:index, :create, :destroy]
     resources :unit_of_measurements, path: 'unit-of-measurements'
   end
   
@@ -39,6 +41,18 @@ Rails.application.routes.draw do
     end
     collection do
       post :upload_document_new
+    end
+  end
+
+  # Process Steps routes
+  resources :process_steps, path: 'process-steps' do
+    member do
+      delete :remove_document
+      post :upload_document
+    end
+    collection do
+      post :upload_document_new
+      get :search
     end
   end
 

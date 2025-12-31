@@ -150,6 +150,22 @@ class Ability
       
       # Super admins can manage all quality tests
       can :manage, QualityTest if user.super_admin?
+      
+      # Process Steps permissions
+      can :read, ProcessStep, tenant_id: user.tenant_id unless user.super_admin?
+      can :read, ProcessStep if user.super_admin?
+      
+      # Users who can create materials should also be able to create process steps
+      if user.has_permission?('create_material')
+        can :create, ProcessStep
+        can :update, ProcessStep, tenant_id: user.tenant_id unless user.super_admin?
+        can :update, ProcessStep if user.super_admin?
+        can :destroy, ProcessStep, tenant_id: user.tenant_id unless user.super_admin?
+        can :destroy, ProcessStep if user.super_admin?
+      end
+      
+      # Super admins can manage all process steps
+      can :manage, ProcessStep if user.super_admin?
     end
   end
 end

@@ -103,12 +103,12 @@
                 <div class="space-y-1">
                   <div class="relative">
                     <%= link_to materials_path, 
-                        class: "group flex items-center justify-start px-3 py-2.5 text-sm font-medium rounded-lg transition-colors sidebar-link #{request.path.start_with?('/materials') && !request.path.include?('unit-of-measurements') ? 'bg-indigo-50 text-indigo-700' : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'}" do %>
-                      <svg class="h-5 w-5 flex-shrink-0 sidebar-icon #{request.path.start_with?('/materials') && !request.path.include?('unit-of-measurements') && !request.path.include?('quality-tests') ? 'text-indigo-500' : 'text-gray-400 group-hover:text-gray-500'}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        class: "group flex items-center justify-start px-3 py-2.5 text-sm font-medium rounded-lg transition-colors sidebar-link #{request.path.start_with?('/materials') && !request.path.include?('unit-of-measurements') && !request.path.include?('quality-tests') && !request.path.include?('process-steps') ? 'bg-indigo-50 text-indigo-700' : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'}" do %>
+                      <svg class="h-5 w-5 flex-shrink-0 sidebar-icon #{request.path.start_with?('/materials') && !request.path.include?('unit-of-measurements') && !request.path.include?('quality-tests') && !request.path.include?('process-steps') ? 'text-indigo-500' : 'text-gray-400 group-hover:text-gray-500'}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
                       </svg>
                       <span class="sidebar-text ml-3 whitespace-nowrap">Materials</span>
-                      <% if current_user.has_permission?('create_material') && can?(:read, UnitOfMeasurement) %>
+                      <% if current_user.has_permission?('create_material') && (can?(:read, UnitOfMeasurement) || can?(:read, QualityTest) || can?(:read, ProcessStep)) %>
                         <button type="button" class="material-submenu-toggle ml-2 p-1 rounded hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500" onclick="event.preventDefault(); event.stopPropagation();">
                           <svg class="h-4 w-4 text-gray-500 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
@@ -117,8 +117,8 @@
                       <% end %>
                     <% end %>
                     
-                    <% if current_user.has_permission?('create_material') && (can?(:read, UnitOfMeasurement) || can?(:read, QualityTest)) %>
-                      <div id="material-submenu" class="material-submenu mt-1 space-y-1 <%= (request.path.include?('unit-of-measurements') || request.path.include?('quality-tests')) ? '' : 'hidden' %>">
+                    <% if current_user.has_permission?('create_material') && (can?(:read, UnitOfMeasurement) || can?(:read, QualityTest) || can?(:read, ProcessStep)) %>
+                      <div id="material-submenu" class="material-submenu mt-1 space-y-1 <%= (request.path.include?('unit-of-measurements') || request.path.include?('quality-tests') || request.path.include?('process-steps')) ? '' : 'hidden' %>">
                         <% if can?(:read, UnitOfMeasurement) %>
                           <%= link_to unit_of_measurements_path, 
                               class: "group flex items-center justify-start pl-8 pr-3 py-2 text-sm font-medium rounded-lg transition-colors sidebar-link #{request.path.include?('unit-of-measurements') ? 'bg-indigo-50 text-indigo-700' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'}" do %>
@@ -135,6 +135,15 @@
                               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
                             <span class="sidebar-text ml-2 whitespace-nowrap">Quality Tests</span>
+                          <% end %>
+                        <% end %>
+                        <% if can?(:read, ProcessStep) %>
+                          <%= link_to process_steps_path, 
+                              class: "group flex items-center justify-start pl-8 pr-3 py-2 text-sm font-medium rounded-lg transition-colors sidebar-link #{request.path.include?('process-steps') ? 'bg-indigo-50 text-indigo-700' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'}" do %>
+                            <svg class="h-4 w-4 flex-shrink-0 sidebar-icon #{request.path.include?('process-steps') ? 'text-indigo-500' : 'text-gray-400 group-hover:text-gray-500'}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                            </svg>
+                            <span class="sidebar-text ml-2 whitespace-nowrap">Process Steps</span>
                           <% end %>
                         <% end %>
                       </div>

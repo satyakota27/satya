@@ -4,6 +4,7 @@ import "./controllers"
 import initFunctionalitySelection from "./functionality_selection"
 import initMaterials from "./materials"
 import initQualityTests from "./quality_tests"
+import initProcessSteps from "./process_steps"
 
 initFunctionalitySelection()
 
@@ -11,3 +12,5 @@ document.addEventListener('turbo:load', initMaterials)
 document.addEventListener('DOMContentLoaded', initMaterials)
 document.addEventListener('turbo:load', initQualityTests)
 document.addEventListener('DOMContentLoaded', initQualityTests)
+document.addEventListener('turbo:load', initProcessSteps)
+document.addEventListener('DOMContentLoaded', initProcessSteps)

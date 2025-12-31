@@ -276,6 +276,88 @@
           </div>
         </div>
       <% end %>
+
+      <% if @material_process_steps.any? %>
+        <div class="mt-8 pt-8 border-t border-gray-200">
+          <h3 class="text-lg font-medium text-gray-900 mb-4">Manufacturing Process Steps</h3>
+          <!-- Mobile: Card layout -->
+          <div class="block sm:hidden space-y-3">
+            <% @material_process_steps.each do |mps| %>
+              <% ps = mps.process_step %>
+              <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                <div class="mb-2">
+                  <span class="text-xs font-medium text-gray-500">Process Code</span>
+                  <p class="text-sm font-medium text-gray-900"><%= ps.process_code %></p>
+                </div>
+                <div class="mb-2">
+                  <span class="text-xs font-medium text-gray-500">Description</span>
+                  <p class="text-sm text-gray-700"><%= ps.description %></p>
+                </div>
+                <% if ps.estimated_days.present? || ps.estimated_hours.present? || ps.estimated_minutes.present? || ps.estimated_seconds.present? %>
+                  <div class="mb-2">
+                    <span class="text-xs font-medium text-gray-500">Estimated Time</span>
+                    <p class="text-sm text-gray-700">
+                      <% time_parts = [] %>
+                      <% time_parts << "#{ps.estimated_days} days" if ps.estimated_days.to_i > 0 %>
+                      <% time_parts << "#{ps.estimated_hours} hours" if ps.estimated_hours.to_i > 0 %>
+                      <% time_parts << "#{ps.estimated_minutes} minutes" if ps.estimated_minutes.to_i > 0 %>
+                      <% time_parts << "#{ps.estimated_seconds} seconds" if ps.estimated_seconds.to_i > 0 %>
+                      <%= time_parts.any? ? time_parts.join(', ') : 'Not specified' %>
+                    </p>
+                  </div>
+                <% end %>
+                <% if ps.documents.attached? %>
+                  <div>
+                    <span class="text-xs font-medium text-gray-500">Documents</span>
+                    <p class="text-sm text-green-600">✓ <%= pluralize(ps.documents.count, 'document') %> attached</p>
+                  </div>
+                <% end %>
+              </div>
+            <% end %>
+          </div>
+          <!-- Desktop: Table layout -->
+          <div class="hidden sm:block overflow-hidden shadow ring-1 ring-black ring-opacity-5 sm:rounded-md">
+            <table class="min-w-full divide-y divide-gray-300">
+              <thead class="bg-gray-50">
+                <tr>
+                  <th class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6">Process Code</th>
+                  <th class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Description</th>
+                  <th class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Estimated Time</th>
+                  <th class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Documents</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-200 bg-white">
+                <% @material_process_steps.each do |mps| %>
+                  <% ps = mps.process_step %>
+                  <tr>
+                    <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6">
+                      <%= ps.process_code %>
+                    </td>
+                    <td class="px-3 py-4 text-sm text-gray-500">
+                      <%= ps.description %>
+                    </td>
+                    <td class="px-3 py-4 text-sm text-gray-500">
+                      <% time_parts = [] %>
+                      <% time_parts << "#{ps.estimated_days} days" if ps.estimated_days.to_i > 0 %>
+                      <% time_parts << "#{ps.estimated_hours} hours" if ps.estimated_hours.to_i > 0 %>
+                      <% time_parts << "#{ps.estimated_minutes} minutes" if ps.estimated_minutes.to_i > 0 %>
+                      <% time_parts << "#{ps.estimated_seconds} seconds" if ps.estimated_seconds.to_i > 0 %>
+                      <%= time_parts.any? ? time_parts.join(', ') : 'Not specified' %>
+                    </td>
+                    <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                      <% if ps.documents.attached? %>
+                        <span class="text-green-600">✓ <%= pluralize(ps.documents.count, 'document') %></span>
+                      <% else %>
+                        <span class="text-gray-400">None</span>
+                      <% end %>
+                    </td>
+                  </tr>
+                <% end %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      <% end %>
     </div>
   </div>
 </div>
