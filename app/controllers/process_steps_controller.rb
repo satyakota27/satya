@@ -45,16 +45,8 @@ class ProcessStepsController < ApplicationController
           end
         end
         
-        # Handle quality test associations (0 or more)
-        if params[:process_step][:quality_test_ids].present?
-          quality_test_ids = params[:process_step][:quality_test_ids].reject(&:blank?)
-          quality_test_ids.each do |test_id|
-            quality_test = QualityTest.find_by(id: test_id)
-            if quality_test
-              @process_step.process_step_quality_tests.create(quality_test: quality_test)
-            end
-          end
-        end
+        # Handle Quality Tests
+        handle_quality_tests(@process_step, params)
         
         render json: {
           success: true,
@@ -107,16 +99,8 @@ class ProcessStepsController < ApplicationController
           end
         end
         
-        # Handle quality test associations (0 or more)
-        if params[:process_step][:quality_test_ids].present?
-          quality_test_ids = params[:process_step][:quality_test_ids].reject(&:blank?)
-          quality_test_ids.each do |test_id|
-            quality_test = QualityTest.find_by(id: test_id)
-            if quality_test
-              @process_step.process_step_quality_tests.create(quality_test: quality_test)
-            end
-          end
-        end
+        # Handle Quality Tests
+        handle_quality_tests(@process_step, params)
         
         redirect_to process_steps_path, notice: 'Process step was successfully created.'
       else
@@ -151,20 +135,8 @@ class ProcessStepsController < ApplicationController
         end
       end
       
-      # Handle quality test associations (0 or more)
-      # Remove all existing associations first
-      @process_step.process_step_quality_tests.destroy_all
-      
-      # Add new associations
-      if params[:process_step][:quality_test_ids].present?
-        quality_test_ids = params[:process_step][:quality_test_ids].reject(&:blank?)
-        quality_test_ids.each do |test_id|
-          quality_test = QualityTest.find_by(id: test_id)
-          if quality_test
-            @process_step.process_step_quality_tests.create(quality_test: quality_test)
-          end
-        end
-      end
+      # Handle Quality Tests
+      handle_quality_tests(@process_step, params)
       
       redirect_to process_steps_path, notice: 'Process step was successfully updated.'
     else
@@ -393,6 +365,26 @@ class ProcessStepsController < ApplicationController
 
   def process_step_params
     params.require(:process_step).permit(:description, :estimated_days, :estimated_hours, :estimated_minutes, :estimated_seconds, :temp_id, :id, documents: [], quality_test_ids: [])
+  end
+
+  def handle_quality_tests(process_step, params)
+    return unless params[:process_step].present?
+    
+    quality_test_ids = params[:process_step][:quality_test_ids] || []
+    
+    # Remove all existing quality tests first
+    process_step.process_step_quality_tests.destroy_all
+    
+    # Associate quality tests with process step
+    quality_test_ids.each do |test_id|
+      next if test_id.blank?
+      
+      quality_test = QualityTest.find_by(id: test_id)
+      next unless quality_test
+      
+      # Create process step quality test association
+      process_step.process_step_quality_tests.create(quality_test: quality_test)
+    end
   end
 end
 
