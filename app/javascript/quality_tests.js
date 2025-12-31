@@ -29,6 +29,44 @@ function initQualityTests() {
 
   // File upload functionality
   initFileUpload();
+  
+  // Initialize remove document handlers for server-rendered buttons
+  initRemoveDocumentHandlers();
+}
+
+function initRemoveDocumentHandlers() {
+  const uploadedDocuments = document.getElementById('uploaded-documents');
+  if (!uploadedDocuments) return;
+  
+  // Attach handlers to existing server-rendered remove buttons
+  const removeButtons = uploadedDocuments.querySelectorAll('.remove-document-server, .remove-document');
+  removeButtons.forEach(button => {
+    // Only attach if not already attached
+    if (!button.dataset.handlerAttached) {
+      button.dataset.handlerAttached = 'true';
+      button.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        const documentId = this.dataset.documentId;
+        const qualityTestId = getQualityTestIdFromForm();
+        const itemElement = this.closest('li[data-document-id]');
+        removeDocument(documentId, itemElement, qualityTestId);
+      });
+    }
+  });
+}
+
+function getQualityTestIdFromForm() {
+  const form = document.querySelector('form[action*="quality-tests"]');
+  if (form) {
+    const idField = form.querySelector('input[name="quality_test[id]"]');
+    if (idField && idField.value) {
+      return idField.value;
+    }
+  }
+  // Try to get from URL if editing
+  const match = window.location.pathname.match(/quality-tests\/(\d+)/);
+  return match ? match[1] : null;
 }
 
 function initFileUpload() {
@@ -57,6 +95,24 @@ function initFileUpload() {
     const match = window.location.pathname.match(/quality-tests\/(\d+)/);
     return match ? match[1] : null;
   };
+  
+  // Prevent form from submitting documents that were already uploaded via AJAX
+  const form = fileInput.closest('form');
+  if (form) {
+    form.addEventListener('submit', function(e) {
+      // For edit forms, always clear the documents field to prevent replacing existing documents
+      const qualityTestId = getQualityTestId();
+      if (qualityTestId) {
+        fileInput.value = '';
+      } else {
+        // For new forms, if documents were uploaded via AJAX (temp_id exists), clear the file input
+        // since documents are already attached to the temporary quality test
+        if (tempIdField && tempIdField.value) {
+          fileInput.value = '';
+        }
+      }
+    });
+  }
 
   fileInput.addEventListener('change', function(e) {
     const files = Array.from(e.target.files);
@@ -134,25 +190,51 @@ function initFileUpload() {
     fetch(url, {
       method: 'POST',
       headers: {
-        'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content
+        'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content,
+        'Accept': 'application/json'
       },
       body: formData
     })
-    .then(response => {
+    .then(async response => {
       // Check if response is JSON
       const contentType = response.headers.get('content-type');
-      if (!contentType || !contentType.includes('application/json')) {
-        throw new Error('Server returned non-JSON response');
-      }
+      const isJson = contentType && contentType.includes('application/json');
       
       if (!response.ok) {
-        return response.json().then(data => {
-          throw new Error(data.error || `Upload failed with status ${response.status}`);
-        }).catch(err => {
-          // If JSON parsing fails, throw with status
-          throw new Error(`Upload failed with status ${response.status}`);
-        });
+        // Try to parse as JSON first
+        if (isJson) {
+          try {
+            const data = await response.json();
+            throw new Error(data.error || `Upload failed with status ${response.status}`);
+          } catch (parseError) {
+            throw new Error(`Upload failed with status ${response.status}`);
+          }
+        } else {
+          // If not JSON, try to get text and show it
+          const text = await response.text();
+          let errorMessage = `Upload failed (${response.status})`;
+          
+          // Try to extract error message from HTML if possible
+          const errorMatch = text.match(/<title[^>]*>([^<]+)<\/title>/i) || 
+                           text.match(/<h1[^>]*>([^<]+)<\/h1>/i) ||
+                           text.match(/<p[^>]*>([^<]+)<\/p>/i);
+          if (errorMatch && errorMatch[1]) {
+            errorMessage = errorMatch[1].trim();
+          } else if (text.length < 200) {
+            // If text is short, it might be a plain error message
+            errorMessage = text.trim();
+          }
+          
+          throw new Error(errorMessage);
+        }
       }
+      
+      // If not JSON, try to handle it
+      if (!isJson) {
+        const text = await response.text();
+        throw new Error(`Server returned non-JSON response: ${text.substring(0, 100)}`);
+      }
+      
       return response.json();
     })
     .then(data => {
@@ -173,6 +255,8 @@ function initFileUpload() {
           if (selectedFiles.children.length === 0) {
             selectedFilesList.classList.add('hidden');
           }
+          // Clear file input to prevent re-submission
+          fileInput.value = '';
           return;
         }
         
@@ -204,12 +288,16 @@ function initFileUpload() {
         // Add remove handler
         const removeBtn = uploadedItem.querySelector('.remove-document');
         if (removeBtn) {
+          removeBtn.dataset.handlerAttached = 'true';
           removeBtn.addEventListener('click', function(e) {
             e.preventDefault();
             e.stopPropagation();
             removeDocument(data.document.id, uploadedItem, qualityTestId || data.quality_test_id);
           });
         }
+        
+        // Clear file input to prevent form re-submission of already uploaded files
+        fileInput.value = '';
         
         // Check if no more selected files
         if (selectedFiles.children.length === 0) {
@@ -238,14 +326,70 @@ function initFileUpload() {
     });
   }
 
-  function removeDocument(documentId, itemElement, qualityTestId) {
-    if (!confirm('Are you sure you want to remove this document?')) {
-      return;
-    }
-    
-    if (qualityTestId) {
-      // Remove from existing quality test
-      fetch(`/quality-tests/${qualityTestId}/remove_document?document_id=${documentId}`, {
+  function formatFileSize(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+  }
+}
+
+// Move removeDocument and checkAndHideUploadedSection outside so they can be accessed by initRemoveDocumentHandlers
+function removeDocument(documentId, itemElement, qualityTestId) {
+  if (!confirm('Are you sure you want to remove this document?')) {
+    return;
+  }
+  
+  const uploadedDocuments = document.getElementById('uploaded-documents');
+  
+  if (qualityTestId) {
+    // Remove from existing quality test
+    fetch(`/quality-tests/${qualityTestId}/remove_document?document_id=${documentId}`, {
+      method: 'DELETE',
+      headers: {
+        'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content,
+        'Accept': 'application/json'
+      }
+    })
+    .then(response => {
+      if (response.ok) {
+        return response.json();
+      } else {
+        throw new Error('Failed to remove document');
+      }
+    })
+    .then(data => {
+      if (data.success) {
+        // Remove only this specific element
+        if (itemElement && itemElement.parentNode) {
+          itemElement.remove();
+        }
+        // Also remove any duplicate elements with the same document ID
+        if (uploadedDocuments) {
+          const duplicates = uploadedDocuments.querySelectorAll(`[data-document-id="${documentId}"]`);
+          duplicates.forEach(dup => {
+            if (dup !== itemElement && dup.parentNode) {
+              dup.remove();
+            }
+          });
+        }
+        checkAndHideUploadedSection();
+      } else {
+        throw new Error('Failed to remove document');
+      }
+    })
+    .catch(error => {
+      console.error('Remove error:', error);
+      alert('Failed to remove document. Please try again.');
+    });
+  } else {
+    // For new quality tests, we need to remove from the temporary quality test
+    const tempIdField = document.getElementById('quality-test-temp-id');
+    const tempId = tempIdField ? tempIdField.value : '';
+    if (tempId) {
+      // Remove from temporary quality test
+      fetch(`/quality-tests/${tempId}/remove_document?document_id=${documentId}`, {
         method: 'DELETE',
         headers: {
           'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content,
@@ -261,17 +405,19 @@ function initFileUpload() {
       })
       .then(data => {
         if (data.success) {
-          // Remove only this specific element
+          // Remove from UI
           if (itemElement && itemElement.parentNode) {
             itemElement.remove();
           }
           // Also remove any duplicate elements with the same document ID
-          const duplicates = uploadedDocuments.querySelectorAll(`[data-document-id="${documentId}"]`);
-          duplicates.forEach(dup => {
-            if (dup !== itemElement && dup.parentNode) {
-              dup.remove();
-            }
-          });
+          if (uploadedDocuments) {
+            const duplicates = uploadedDocuments.querySelectorAll(`[data-document-id="${documentId}"]`);
+            duplicates.forEach(dup => {
+              if (dup !== itemElement && dup.parentNode) {
+                dup.remove();
+              }
+            });
+          }
           checkAndHideUploadedSection();
         } else {
           throw new Error('Failed to remove document');
@@ -282,44 +428,41 @@ function initFileUpload() {
         alert('Failed to remove document. Please try again.');
       });
     } else {
-      // Just remove from UI for new quality tests (will be handled on save)
+      // No temp_id, just remove from UI (document not yet saved)
       if (itemElement && itemElement.parentNode) {
         itemElement.remove();
       }
       // Also remove any duplicate elements with the same document ID
-      const duplicates = uploadedDocuments.querySelectorAll(`[data-document-id="${documentId}"]`);
-      duplicates.forEach(dup => {
-        if (dup !== itemElement && dup.parentNode) {
-          dup.remove();
-        }
-      });
+      if (uploadedDocuments) {
+        const duplicates = uploadedDocuments.querySelectorAll(`[data-document-id="${documentId}"]`);
+        duplicates.forEach(dup => {
+          if (dup !== itemElement && dup.parentNode) {
+            dup.remove();
+          }
+        });
+      }
       checkAndHideUploadedSection();
     }
   }
+}
 
-  function checkAndHideUploadedSection() {
-    const uploadedSection = document.getElementById('uploaded-documents-section');
-    if (uploadedDocuments && uploadedDocuments.children.length === 0) {
-      if (uploadedSection) {
-        uploadedSection.classList.add('hidden');
-      } else {
-        uploadedDocuments.classList.add('hidden');
-      }
+function checkAndHideUploadedSection() {
+  const uploadedDocuments = document.getElementById('uploaded-documents');
+  const uploadedSection = document.getElementById('uploaded-documents-section');
+  if (uploadedDocuments && uploadedDocuments.children.length === 0) {
+    if (uploadedSection) {
+      uploadedSection.classList.add('hidden');
+    } else if (uploadedDocuments) {
+      uploadedDocuments.classList.add('hidden');
     }
-  }
-
-  function formatFileSize(bytes) {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
   }
 }
 
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', initQualityTests);
 document.addEventListener('turbo:load', initQualityTests);
+// Also initialize remove handlers on turbo:load for dynamically loaded content
+document.addEventListener('turbo:load', initRemoveDocumentHandlers);
 
 export default initQualityTests;
 
