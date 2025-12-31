@@ -6,6 +6,13 @@ class MaterialsController < ApplicationController
   def index
     authorize! :read, Material
     @materials = Material.all
+    
+    # Material approvers should not see rejected materials in the listing
+    # (they can only see draft materials for approval)
+    if current_user.has_permission?('material_approver') && !current_user.super_admin?
+      @materials = @materials.where.not(state: 'rejected')
+    end
+    
     @materials = @materials.by_state(params[:state]) if params[:state].present?
     @materials = @materials.searchable(params[:search]) if params[:search].present?
     @materials = @materials.order(created_at: :desc)
@@ -24,7 +31,14 @@ class MaterialsController < ApplicationController
   def search
     authorize! :read, Material
     query = params[:q] || ''
-    @materials = Material.searchable(query).limit(10)
+    @materials = Material.searchable(query)
+    
+    # If searching for BOM components, only return approved materials
+    if params[:bom_search] == 'true'
+      @materials = @materials.where(state: 'approved')
+    end
+    
+    @materials = @materials.limit(10)
     
     render json: {
       materials: @materials.map { |m| 
@@ -86,7 +100,18 @@ class MaterialsController < ApplicationController
 
   def update
     authorize! :update, @material
-    if @material.update(material_params)
+    update_params = material_params.dup
+    was_rejected = @material.rejected?
+    
+    # If material is rejected and being updated, reset to draft state and clear rejection info
+    if was_rejected
+      update_params[:state] = 'draft'
+      update_params[:approver_comments] = nil
+      update_params[:rejected_by_id] = nil
+      update_params[:rejected_at] = nil
+    end
+    
+    if @material.update(update_params)
       # Handle BOM components
       if @material.has_bom && params[:material][:bom_component_material_ids].present?
         # Remove existing BOM components that are not in the update
@@ -124,7 +149,13 @@ class MaterialsController < ApplicationController
         @material.material_bom_components.destroy_all
       end
       
-      redirect_to @material, notice: 'Material was successfully updated.'
+      notice_message = if was_rejected
+        'Material has been updated and moved back to draft state. Please resubmit for approval.'
+      else
+        'Material was successfully updated.'
+      end
+      
+      redirect_to @material, notice: notice_message
     else
       @unit_of_measurements = UnitOfMeasurement.active.ordered
       @bom_components = @material.material_bom_components.includes(:component_material)
@@ -140,10 +171,40 @@ class MaterialsController < ApplicationController
 
   def approve
     authorize! :approve, @material
-    if @material.update(state: 'approved')
+    comments = params[:approver_comments] || params.dig(:material, :approver_comments)
+    
+    if @material.update(
+      state: 'approved',
+      approver_comments: comments,
+      approved_by: current_user,
+      approved_at: Time.current
+    )
       redirect_to @material, notice: 'Material was successfully approved and material code generated.'
     else
       redirect_to @material, alert: 'Failed to approve material: ' + @material.errors.full_messages.join(', ')
+    end
+  end
+
+  def reject
+    authorize! :reject, @material
+    comments = params[:approver_comments] || params.dig(:material, :approver_comments) || params.dig(:approver_comments)
+    
+    if comments.blank?
+      redirect_to @material, alert: 'Comments are required when rejecting a material.'
+      return
+    end
+    
+    result = @material.update(
+      state: 'rejected',
+      approver_comments: comments,
+      rejected_by: current_user,
+      rejected_at: Time.current
+    )
+    
+    if result
+      redirect_to @material, notice: 'Material was successfully rejected.'
+    else
+      redirect_to @material, alert: 'Failed to reject material: ' + @material.errors.full_messages.join(', ')
     end
   end
 
@@ -154,7 +215,12 @@ class MaterialsController < ApplicationController
   end
 
   def material_params
-    params.require(:material).permit(:description, :procurement_unit_id, :sale_unit_id, :has_bom)
+    params.require(:material).permit(:description, :procurement_unit_id, :sale_unit_id, :tracking_type, :sample_size,
+      :has_bom, :has_shelf_life, 
+      :shelf_life_years, :shelf_life_months, :shelf_life_weeks, :shelf_life_days, 
+      :shelf_life_hours, :shelf_life_minutes, :shelf_life_seconds, 
+      :has_minimum_stock_value, :minimum_stock_value, :has_minimum_reorder_value, :minimum_reorder_value,
+      :state, :approver_comments, :rejected_by_id, :rejected_at, :approved_by_id, :approved_at)
   end
 end
 

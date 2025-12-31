@@ -1,4 +1,22 @@
 <div>
+  <% if @material.rejected? && @material.approver_comments.present? %>
+    <div class="mb-4 bg-red-50 border-l-4 border-red-400 p-4 rounded-md shadow-sm" role="alert">
+      <div class="flex">
+        <div class="flex-shrink-0">
+          <svg class="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+          </svg>
+        </div>
+        <div class="ml-3 flex-1">
+          <h3 class="text-sm font-medium text-red-800">Material Rejected</h3>
+          <div class="mt-2 text-sm text-red-700">
+            <p>This material has been rejected. Please review the rejection comments below and make necessary amendments.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  <% end %>
+  
   <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 sm:mb-6 gap-4">
     <div class="flex-1">
       <h1 class="text-2xl sm:text-3xl font-bold text-gray-900">Material Details</h1>
@@ -11,10 +29,16 @@
         <% end %>
       <% end %>
       <% if can?(:approve, @material) && @material.draft? %>
-        <%= button_to approve_material_path(@material), method: :post, 
-            class: "inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500" do %>
+        <button type="button" onclick="document.getElementById('approve-modal').classList.remove('hidden')" 
+            class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
           Approve
-        <% end %>
+        </button>
+      <% end %>
+      <% if can?(:reject, @material) && @material.draft? %>
+        <button type="button" onclick="document.getElementById('reject-modal').classList.remove('hidden')" 
+            class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
+          Reject
+        </button>
       <% end %>
       <%= link_to materials_path, class: "inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50" do %>
         Back to List
@@ -35,7 +59,13 @@
           <dt class="text-sm font-medium text-gray-500">State</dt>
           <dd class="mt-1">
             <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium <%= 
-              @material.approved? ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+              if @material.approved?
+                'bg-green-100 text-green-800'
+              elsif @material.rejected?
+                'bg-red-100 text-red-800'
+              else
+                'bg-yellow-100 text-yellow-800'
+              end
             %>">
               <%= @material.state.humanize %>
             </span>
@@ -71,7 +101,38 @@
           <dt class="text-sm font-medium text-gray-500">Updated At</dt>
           <dd class="mt-1 text-sm text-gray-900"><%= @material.updated_at.strftime("%B %d, %Y at %I:%M %p") %></dd>
         </div>
+        <% if @material.approved_by %>
+          <div>
+            <dt class="text-sm font-medium text-gray-500">Approved By</dt>
+            <dd class="mt-1 text-sm text-gray-900"><%= @material.approved_by.email %></dd>
+          </div>
+          <div>
+            <dt class="text-sm font-medium text-gray-500">Approved At</dt>
+            <dd class="mt-1 text-sm text-gray-900"><%= @material.approved_at&.strftime("%B %d, %Y at %I:%M %p") %></dd>
+          </div>
+        <% end %>
+        <% if @material.rejected_by %>
+          <div>
+            <dt class="text-sm font-medium text-gray-500">Rejected By</dt>
+            <dd class="mt-1 text-sm text-gray-900"><%= @material.rejected_by.email %></dd>
+          </div>
+          <div>
+            <dt class="text-sm font-medium text-gray-500">Rejected At</dt>
+            <dd class="mt-1 text-sm text-gray-900"><%= @material.rejected_at&.strftime("%B %d, %Y at %I:%M %p") %></dd>
+          </div>
+        <% end %>
       </dl>
+      
+      <% if @material.approver_comments.present? %>
+        <div class="mt-6 pt-6 border-t border-gray-200">
+          <h3 class="text-sm font-medium text-gray-900 mb-2">
+            <%= @material.approved? ? 'Approval' : 'Rejection' %> Comments
+          </h3>
+          <div class="bg-<%= @material.approved? ? 'green' : 'red' %>-50 border-l-4 border-<%= @material.approved? ? 'green' : 'red' %>-400 p-4 rounded">
+            <p class="text-sm text-gray-700 whitespace-pre-wrap"><%= @material.approver_comments %></p>
+          </div>
+        </div>
+      <% end %>
 
       <% if @material.has_bom && @material.material_bom_components.any? %>
         <div class="mt-8 pt-8 border-t border-gray-200">
@@ -122,6 +183,57 @@
               </tbody>
             </table>
           </div>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div>
+
+<!-- Approve Modal -->
+<div id="approve-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+  <div class="relative top-20 mx-auto p-5 border w-full max-w-md mx-4 sm:mx-auto shadow-lg rounded-md bg-white">
+    <div class="mt-3">
+      <h3 class="text-lg font-medium text-gray-900 mb-4">Approve Material</h3>
+      <%= form_with url: approve_material_path(@material), method: :post, local: true do |form| %>
+        <div class="mb-4">
+          <%= form.label :approver_comments, "Comments (optional)", class: "block text-sm font-medium text-gray-700 mb-1" %>
+          <%= form.text_area :approver_comments, name: 'approver_comments', rows: 4, 
+              class: "shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md",
+              placeholder: "Add any comments about this approval..." %>
+        </div>
+        <div class="flex items-center justify-end space-x-3 pt-4">
+          <button type="button" onclick="document.getElementById('approve-modal').classList.add('hidden')" 
+              class="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50">
+            Cancel
+          </button>
+          <%= form.submit "Approve", class: "inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700" %>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div>
+
+<!-- Reject Modal -->
+<div id="reject-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+  <div class="relative top-20 mx-auto p-5 border w-full max-w-md mx-4 sm:mx-auto shadow-lg rounded-md bg-white">
+    <div class="mt-3">
+      <h3 class="text-lg font-medium text-gray-900 mb-4">Reject Material</h3>
+      <%= form_with url: reject_material_path(@material), method: :post, local: true do |form| %>
+        <div class="mb-4">
+          <%= form.label :approver_comments, "Rejection Comments", class: "block text-sm font-medium text-gray-700 mb-1" do %>
+            Rejection Comments <span class="text-red-500">*</span>
+          <% end %>
+          <%= form.text_area :approver_comments, name: 'approver_comments', rows: 4, required: true,
+              class: "shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md",
+              placeholder: "Please provide reasons for rejection..." %>
+          <p class="mt-1 text-xs text-gray-500">Comments are required when rejecting a material.</p>
+        </div>
+        <div class="flex items-center justify-end space-x-3 pt-4">
+          <button type="button" onclick="document.getElementById('reject-modal').classList.add('hidden')" 
+              class="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50">
+            Cancel
+          </button>
+          <%= form.submit "Reject", class: "inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700" %>
         </div>
       <% end %>
     </div>

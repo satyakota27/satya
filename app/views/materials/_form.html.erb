@@ -23,112 +23,329 @@
     </div>
   <% end %>
 
-  <div class="space-y-6">
-    <div>
-      <%= form.label :description, "Material Description", class: "block text-sm font-medium text-gray-700" do %>
-        Material Description <span class="text-red-500">*</span>
-      <% end %>
-      <div class="mt-1">
-        <%= form.text_area :description, rows: 3, required: true, class: "shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md", placeholder: "Enter material description..." %>
+  <!-- Wizard Form for All Materials -->
+  <div id="material-wizard" class="material-wizard">
+      <!-- Progress Steps -->
+      <div class="mb-8">
+        <nav aria-label="Progress">
+          <ol role="list" class="flex items-center">
+            <li class="relative flex-1">
+              <div class="flex items-center">
+                <div class="relative flex h-8 w-8 items-center justify-center rounded-full bg-indigo-600" id="step-1-indicator">
+                  <span class="text-sm font-semibold text-white">1</span>
+                </div>
+                <span class="ml-4 text-sm font-medium text-gray-900">Basic Information</span>
+              </div>
+            </li>
+            <li class="relative flex-1">
+              <div class="flex items-center">
+                <div class="absolute left-0 top-0 h-0.5 w-full bg-gray-200" aria-hidden="true"></div>
+                <div class="relative flex h-8 w-8 items-center justify-center rounded-full bg-gray-200" id="step-2-indicator">
+                  <span class="text-sm font-semibold text-gray-600">2</span>
+                </div>
+                <span class="ml-4 text-sm font-medium text-gray-500">BOM Components</span>
+              </div>
+            </li>
+            <li class="relative flex-1">
+              <div class="flex items-center">
+                <div class="absolute left-0 top-0 h-0.5 w-full bg-gray-200" aria-hidden="true"></div>
+                <div class="relative flex h-8 w-8 items-center justify-center rounded-full bg-gray-200" id="step-3-indicator">
+                  <span class="text-sm font-semibold text-gray-600">3</span>
+                </div>
+                <span class="ml-4 text-sm font-medium text-gray-500">Additional Settings</span>
+              </div>
+            </li>
+          </ol>
+        </nav>
       </div>
-    </div>
 
-    <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
-      <div>
-        <%= form.label :procurement_unit_id, "Procurement Unit", class: "block text-sm font-medium text-gray-700" %>
-        <div class="mt-1 flex gap-2">
-          <%= form.select :procurement_unit_id, 
-              options_from_collection_for_select(@unit_of_measurements, :id, :display_name, @material.procurement_unit_id),
-              { include_blank: "Select procurement unit" },
-              { class: "flex-1 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md" } %>
-          <button type="button" id="create-procurement-unit" class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
-            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-            </svg>
-          </button>
-        </div>
-      </div>
-
-      <div>
-        <%= form.label :sale_unit_id, "Sale Unit", class: "block text-sm font-medium text-gray-700" %>
-        <div class="mt-1 flex gap-2">
-          <%= form.select :sale_unit_id, 
-              options_from_collection_for_select(@unit_of_measurements, :id, :display_name, @material.sale_unit_id),
-              { include_blank: "Select sale unit" },
-              { class: "flex-1 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md" } %>
-          <button type="button" id="create-sale-unit" class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
-            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-            </svg>
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <div>
-      <div class="flex items-center justify-between">
-        <div>
-          <div class="flex items-center">
-            <%= form.check_box :has_bom, class: "h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded" %>
-            <%= form.label :has_bom, "Has Bill Of Material (B.O.M)", class: "ml-2 block text-sm text-gray-900" %>
+      <!-- Step 1: Basic Information -->
+      <div class="wizard-step" id="wizard-step-1" data-step="1">
+        <div class="space-y-6">
+          <div>
+            <h2 class="text-xl font-semibold text-gray-900 mb-4">Basic Information</h2>
+            <p class="text-sm text-gray-500 mb-6">Enter the material description and unit of measurements.</p>
           </div>
-          <p class="mt-1 text-sm text-gray-500">Enable to define component materials and quantities</p>
+          
+          <div>
+            <%= form.label :description, "Material Description", class: "block text-sm font-medium text-gray-700" do %>
+              Material Description <span class="text-red-500">*</span>
+            <% end %>
+            <div class="mt-1">
+              <%= form.text_area :description, rows: 3, required: true, class: "shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md", placeholder: "Enter material description..." %>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
+            <div>
+              <%= form.label :procurement_unit_id, "Procurement Unit", class: "block text-sm font-medium text-gray-700" %>
+              <div class="mt-1 flex gap-2">
+                <%= form.select :procurement_unit_id, 
+                    options_from_collection_for_select(@unit_of_measurements, :id, :display_name, @material.procurement_unit_id),
+                    { include_blank: "Select procurement unit" },
+                    { class: "flex-1 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md" } %>
+                <button type="button" id="create-procurement-unit" class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                  <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <%= form.label :sale_unit_id, "Sale Unit", class: "block text-sm font-medium text-gray-700" %>
+              <div class="mt-1 flex gap-2">
+                <%= form.select :sale_unit_id, 
+                    options_from_collection_for_select(@unit_of_measurements, :id, :display_name, @material.sale_unit_id),
+                    { include_blank: "Select sale unit" },
+                    { class: "flex-1 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md" } %>
+                <button type="button" id="create-sale-unit" class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                  <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tracking Type -->
+          <div>
+            <%= form.label :tracking_type, "Tracking Type", class: "block text-sm font-medium text-gray-700 mb-2" do %>
+              Tracking Type <span class="text-red-500">*</span>
+            <% end %>
+            <div class="mt-2 space-y-2">
+              <div class="flex items-center">
+                <%= form.radio_button :tracking_type, "unit", class: "h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300", required: true %>
+                <%= form.label :tracking_type_unit, "Unit", class: "ml-2 block text-sm text-gray-900" %>
+              </div>
+              <div class="flex items-center">
+                <%= form.radio_button :tracking_type, "batch", class: "h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300", required: true %>
+                <%= form.label :tracking_type_batch, "Batch", class: "ml-2 block text-sm text-gray-900" %>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sample Size (shown when batch is selected) -->
+          <div id="sample-size-section" class="<%= 'hidden' unless @material.tracking_type == 'batch' %>">
+            <%= form.label :sample_size, "Sample Size", class: "block text-sm font-medium text-gray-700" do %>
+              Sample Size <span class="text-red-500">*</span>
+            <% end %>
+            <div class="mt-1">
+              <%= form.number_field :sample_size, min: 1, step: 1, class: "shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md", placeholder: "Enter sample size..." %>
+              <p class="mt-1 text-xs text-gray-500">Enter a positive integer for batch sample size</p>
+            </div>
+          </div>
         </div>
       </div>
-    </div>
 
-    <!-- BOM Components Section -->
-    <div id="bom-components-section" class="<%= 'hidden' unless @material.has_bom %>">
-      <div class="border-t border-gray-200 pt-6">
-        <h3 class="text-lg font-medium text-gray-900 mb-4">B.O.M Components</h3>
-        <div id="bom-components-list" class="space-y-4">
-          <% if @material.persisted? && @bom_components %>
-            <% @bom_components.each do |bom_component| %>
-              <div class="bom-component-row flex flex-col sm:flex-row gap-4 items-stretch sm:items-end p-4 bg-gray-50 rounded-md" data-bom-id="<%= bom_component.id %>">
-                <div class="flex-1 min-w-0">
-                  <label class="block text-sm font-medium text-gray-700 mb-1">Component material description/code</label>
-                  <input type="text" 
-                         class="material-search shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md" 
-                         value="<%= bom_component.component_material.material_code %> - <%= bom_component.component_material.description %>"
-                         data-material-id="<%= bom_component.component_material_id %>"
-                         placeholder="Search by material code or description..."
-                         readonly />
-                  <input type="hidden" name="material[bom_component_ids][]" value="<%= bom_component.id %>" />
-                  <input type="hidden" name="material[bom_component_material_ids][]" value="<%= bom_component.component_material_id %>" />
+      <!-- Step 2: BOM Components -->
+      <div class="wizard-step hidden" id="wizard-step-2" data-step="2">
+        <div class="space-y-6">
+          <div>
+            <h2 class="text-xl font-semibold text-gray-900 mb-4">Bill of Materials</h2>
+            <p class="text-sm text-gray-500 mb-6">Configure BOM components if this material has sub-components.</p>
+          </div>
+
+          <!-- Has BOM Toggle -->
+          <div>
+            <div class="flex items-center justify-between">
+              <div class="flex-1">
+                <div class="flex items-center">
+                  <label class="relative inline-flex items-center cursor-pointer">
+                    <%= form.check_box :has_bom, class: "sr-only peer" %>
+                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                    <span class="ml-3 text-sm font-medium text-gray-900">Has Bill Of Material (B.O.M)</span>
+                  </label>
                 </div>
-                <div class="w-full sm:w-32">
-                  <label class="block text-sm font-medium text-gray-700 mb-1">Quantity</label>
-                  <input type="number" 
-                         step="0.01" 
-                         name="material[bom_component_quantities][]" 
-                         value="<%= bom_component.quantity %>"
-                         class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md" 
-                         required />
+                <p class="mt-1 ml-14 text-sm text-gray-500">Enable to define component materials and quantities</p>
+              </div>
+            </div>
+            <!-- BOM Components Section - directly below toggle -->
+            <div id="bom-components-section" class="mt-4 <%= 'hidden' unless @material.has_bom %>">
+              <div class="border-t border-gray-200 pt-4">
+                <h3 class="text-lg font-medium text-gray-900 mb-4">B.O.M Components</h3>
+                <div id="bom-components-list" class="space-y-4">
+                  <% if @material.persisted? && @bom_components %>
+                    <% @bom_components.each do |bom_component| %>
+                      <div class="bom-component-row bom-component-added flex flex-col sm:flex-row gap-4 items-stretch sm:items-end p-4 bg-gray-50 rounded-md" data-bom-id="<%= bom_component.id %>">
+                        <div class="flex-1 min-w-0">
+                          <label class="block text-sm font-medium text-gray-700 mb-1">Component material description/code</label>
+                          <input type="text" 
+                                 class="material-search bom-component-input shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md bg-gray-100 text-gray-600" 
+                                 value="<%= bom_component.component_material.material_code %> - <%= bom_component.component_material.description %>"
+                                 data-material-id="<%= bom_component.component_material_id %>"
+                                 placeholder="Search approved materials by code or description..."
+                                 autocomplete="off"
+                                 readonly />
+                          <input type="hidden" name="material[bom_component_ids][]" value="<%= bom_component.id %>" />
+                          <input type="hidden" name="material[bom_component_material_ids][]" class="bom-material-id" value="<%= bom_component.component_material_id %>" />
+                        </div>
+                        <div class="w-full sm:w-32">
+                          <label class="block text-sm font-medium text-gray-700 mb-1">Quantity</label>
+                          <input type="number" 
+                                 step="1" 
+                                 min="1"
+                                 name="material[bom_component_quantities][]" 
+                                 value="<%= bom_component.quantity.to_i %>"
+                                 class="bom-quantity-input shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md bg-gray-100 text-gray-600" 
+                                 required
+                                 readonly />
+                        </div>
+                        <div class="flex-shrink-0 flex gap-2">
+                          <button type="button" class="edit-bom-component w-full sm:w-auto inline-flex items-center justify-center px-3 py-2 border border-indigo-300 shadow-sm text-sm font-medium rounded-md text-indigo-700 bg-indigo-50 hover:bg-indigo-100">
+                            Edit
+                          </button>
+                          <button type="button" class="remove-bom-component w-full sm:w-auto inline-flex items-center justify-center px-3 py-2 border border-red-300 shadow-sm text-sm font-medium rounded-md text-red-700 bg-red-50 hover:bg-red-100">
+                            Remove
+                          </button>
+                        </div>
+                      </div>
+                    <% end %>
+                  <% end %>
                 </div>
-                <div class="flex-shrink-0">
-                  <button type="button" class="remove-bom-component w-full sm:w-auto inline-flex items-center justify-center px-3 py-2 border border-red-300 shadow-sm text-sm font-medium rounded-md text-red-700 bg-red-50 hover:bg-red-100">
-                    Remove
-                  </button>
+                <button type="button" id="add-bom-component" class="mt-4 w-full sm:w-auto inline-flex items-center justify-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                  <svg class="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                  </svg>
+                  Add Component
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 3: Additional Settings -->
+      <div class="wizard-step hidden" id="wizard-step-3" data-step="3">
+        <div class="space-y-6">
+          <div>
+            <h2 class="text-xl font-semibold text-gray-900 mb-4">Additional Settings</h2>
+            <p class="text-sm text-gray-500 mb-6">Configure shelf life, stock values, and re-order thresholds.</p>
+          </div>
+
+          <!-- Material Shelf Life Toggle -->
+          <div>
+            <div class="flex items-center justify-between">
+              <div class="flex-1">
+                <div class="flex items-center">
+                  <label class="relative inline-flex items-center cursor-pointer">
+                    <%= form.check_box :has_shelf_life, class: "sr-only peer" %>
+                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                    <span class="ml-3 text-sm font-medium text-gray-900">Material Shelf Life</span>
+                  </label>
+                </div>
+                <p class="mt-1 ml-14 text-sm text-gray-500">Enable to specify shelf life duration</p>
+              </div>
+            </div>
+            <!-- Shelf Life Input Section - directly below toggle -->
+            <div id="shelf-life-section" class="mt-4 <%= 'hidden' unless @material.has_shelf_life %>">
+              <div class="border-t border-gray-200 pt-4">
+                <label class="block text-sm font-medium text-gray-700 mb-3">Shelf Life Duration</label>
+                <div class="flex flex-wrap gap-2 sm:gap-3 items-end">
+                  <div class="flex-1 min-w-[70px] sm:min-w-[90px]">
+                    <%= form.label :shelf_life_years, "Years", class: "block text-xs font-medium text-gray-600 mb-1" %>
+                    <%= form.number_field :shelf_life_years, min: 0, class: "shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full text-sm border-gray-300 rounded-md", placeholder: "0" %>
+                  </div>
+                  <div class="flex-1 min-w-[70px] sm:min-w-[90px]">
+                    <%= form.label :shelf_life_months, "Months", class: "block text-xs font-medium text-gray-600 mb-1" %>
+                    <%= form.number_field :shelf_life_months, min: 0, class: "shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full text-sm border-gray-300 rounded-md", placeholder: "0" %>
+                  </div>
+                  <div class="flex-1 min-w-[70px] sm:min-w-[90px]">
+                    <%= form.label :shelf_life_weeks, "Weeks", class: "block text-xs font-medium text-gray-600 mb-1" %>
+                    <%= form.number_field :shelf_life_weeks, min: 0, class: "shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full text-sm border-gray-300 rounded-md", placeholder: "0" %>
+                  </div>
+                  <div class="flex-1 min-w-[70px] sm:min-w-[90px]">
+                    <%= form.label :shelf_life_days, "Days", class: "block text-xs font-medium text-gray-600 mb-1" %>
+                    <%= form.number_field :shelf_life_days, min: 0, class: "shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full text-sm border-gray-300 rounded-md", placeholder: "0" %>
+                  </div>
+                  <div class="flex-1 min-w-[70px] sm:min-w-[90px]">
+                    <%= form.label :shelf_life_hours, "Hours", class: "block text-xs font-medium text-gray-600 mb-1" %>
+                    <%= form.number_field :shelf_life_hours, min: 0, class: "shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full text-sm border-gray-300 rounded-md", placeholder: "0" %>
+                  </div>
+                  <div class="flex-1 min-w-[70px] sm:min-w-[90px]">
+                    <%= form.label :shelf_life_minutes, "Minutes", class: "block text-xs font-medium text-gray-600 mb-1" %>
+                    <%= form.number_field :shelf_life_minutes, min: 0, class: "shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full text-sm border-gray-300 rounded-md", placeholder: "0" %>
+                  </div>
+                  <div class="flex-1 min-w-[70px] sm:min-w-[90px]">
+                    <%= form.label :shelf_life_seconds, "Seconds", class: "block text-xs font-medium text-gray-600 mb-1" %>
+                    <%= form.number_field :shelf_life_seconds, min: 0, class: "shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full text-sm border-gray-300 rounded-md", placeholder: "0" %>
+                  </div>
+                </div>
+                <p class="mt-2 text-xs text-gray-500">Enter values for the desired shelf life duration</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Minimum Stock Value Toggle -->
+          <div>
+            <div class="flex items-center justify-between">
+              <div class="flex-1">
+                <div class="flex items-center">
+                  <label class="relative inline-flex items-center cursor-pointer">
+                    <%= form.check_box :has_minimum_stock_value, class: "sr-only peer" %>
+                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                    <span class="ml-3 text-sm font-medium text-gray-900">Minimum Stock Value</span>
+                  </label>
+                </div>
+                <p class="mt-1 ml-14 text-sm text-gray-500">Enable to set minimum stock threshold</p>
+              </div>
+            </div>
+            <!-- Minimum Stock Value Input - directly below toggle -->
+            <div id="minimum-stock-value-section" class="mt-4 <%= 'hidden' unless @material.has_minimum_stock_value %>">
+              <div class="border-t border-gray-200 pt-4">
+                <div class="max-w-xs">
+                  <%= form.label :minimum_stock_value, "Minimum Stock Value", class: "block text-sm font-medium text-gray-700 mb-1" %>
+                  <%= form.number_field :minimum_stock_value, min: 0, step: 1, class: "shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full text-sm border-gray-300 rounded-md", placeholder: "Enter minimum stock value..." %>
                 </div>
               </div>
-            <% end %>
-          <% end %>
+            </div>
+          </div>
+
+          <!-- Minimum Re-order Value Toggle -->
+          <div>
+            <div class="flex items-center justify-between">
+              <div class="flex-1">
+                <div class="flex items-center">
+                  <label class="relative inline-flex items-center cursor-pointer">
+                    <%= form.check_box :has_minimum_reorder_value, class: "sr-only peer" %>
+                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                    <span class="ml-3 text-sm font-medium text-gray-900">Minimum Re-order Value</span>
+                  </label>
+                </div>
+                <p class="mt-1 ml-14 text-sm text-gray-500">Enable to set minimum re-order threshold</p>
+              </div>
+            </div>
+            <!-- Minimum Re-order Value Input - directly below toggle -->
+            <div id="minimum-reorder-value-section" class="mt-4 <%= 'hidden' unless @material.has_minimum_reorder_value %>">
+              <div class="border-t border-gray-200 pt-4">
+                <div class="max-w-xs">
+                  <%= form.label :minimum_reorder_value, "Minimum Re-order Value", class: "block text-sm font-medium text-gray-700 mb-1" %>
+                  <%= form.number_field :minimum_reorder_value, min: 0, step: 1, class: "shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full text-sm border-gray-300 rounded-md", placeholder: "Enter minimum re-order value..." %>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
-        <button type="button" id="add-bom-component" class="mt-4 w-full sm:w-auto inline-flex items-center justify-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
-          <svg class="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-          </svg>
-          Add Component
-        </button>
+      </div>
+
+      <!-- Wizard Navigation -->
+      <div class="mt-8 flex items-center justify-between border-t border-gray-200 pt-6">
+        <div>
+          <button type="button" id="wizard-prev-btn" class="hidden bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+            Previous
+          </button>
+        </div>
+        <div class="flex gap-3">
+          <%= link_to "Cancel", @material.persisted? ? material_path(@material) : materials_path, class: "bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors" %>
+          <button type="button" id="wizard-next-btn" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+            Next
+          </button>
+          <button type="submit" id="wizard-submit-btn" class="hidden inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+            <%= @material.new_record? ? 'Create Material' : 'Update Material' %>
+          </button>
+        </div>
       </div>
     </div>
-
-    <div class="flex items-center justify-end space-x-3 pt-4 border-t border-gray-200">
-      <%= link_to "Cancel", @material.persisted? ? material_path(@material) : materials_path, 
-          class: "bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors" %>
-      <%= form.submit class: "inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors" %>
-    </div>
-  </div>
 <% end %>
 
 <!-- Unit Creation Modal -->

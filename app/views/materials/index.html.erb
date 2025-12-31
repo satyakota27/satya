@@ -27,7 +27,7 @@
         <div id="search-loading" class="hidden mt-2 text-sm text-gray-500">Searching...</div>
       </div>
       <div class="w-full sm:w-48">
-        <%= form.select :state, options_for_select([['All States', ''], ['Draft', 'draft'], ['Approved', 'approved']], params[:state]), {},
+        <%= form.select :state, options_for_select([['All States', ''], ['Draft', 'draft'], ['Rejected', 'rejected'], ['Approved', 'approved']], params[:state]), {},
             { id: "material-state-filter",
               class: "shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md" } %>
       </div>

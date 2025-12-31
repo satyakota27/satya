@@ -108,7 +108,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
                       </svg>
                       <span class="sidebar-text ml-3 whitespace-nowrap">Materials</span>
-                      <% if (current_user.has_permission?('create_material') || current_user.has_permission?('material_creation')) && can?(:read, UnitOfMeasurement) %>
+                      <% if current_user.has_permission?('create_material') && can?(:read, UnitOfMeasurement) %>
                         <button type="button" class="material-submenu-toggle ml-2 p-1 rounded hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500" onclick="event.preventDefault(); event.stopPropagation();">
                           <svg class="h-4 w-4 text-gray-500 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
@@ -117,7 +117,7 @@
                       <% end %>
                     <% end %>
                     
-                    <% if (current_user.has_permission?('create_material') || current_user.has_permission?('material_creation')) && can?(:read, UnitOfMeasurement) %>
+                    <% if current_user.has_permission?('create_material') && can?(:read, UnitOfMeasurement) %>
                       <div id="material-submenu" class="material-submenu mt-1 space-y-1 <%= request.path.include?('unit-of-measurements') ? '' : 'hidden' %>">
                         <%= link_to unit_of_measurements_path, 
                             class: "group flex items-center justify-start pl-8 pr-3 py-2 text-sm font-medium rounded-lg transition-colors sidebar-link #{request.path.include?('unit-of-measurements') ? 'bg-indigo-50 text-indigo-700' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'}" do %>

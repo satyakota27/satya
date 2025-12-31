@@ -16,11 +16,17 @@
                     <div class="text-sm font-medium text-gray-900 truncate">
                       <%= material.material_code || 'Draft' %>
                     </div>
-                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium flex-shrink-0 <%= 
-                      material.approved? ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-                    %>">
-                      <%= material.state.humanize %>
-                    </span>
+                      <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium flex-shrink-0 <%= 
+                        if material.approved?
+                          'bg-green-100 text-green-800'
+                        elsif material.rejected?
+                          'bg-red-100 text-red-800'
+                        else
+                          'bg-yellow-100 text-yellow-800'
+                        end
+                      %>">
+                        <%= material.state.humanize %>
+                      </span>
                   </div>
                   <div class="text-sm text-gray-500 mt-1 line-clamp-2">
                     <%= truncate(material.description, length: 100) %>

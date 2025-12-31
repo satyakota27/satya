@@ -115,24 +115,17 @@ SubFunctionality.find_or_create_by!(functionality: material_mgmt, code: 'enable_
 end
 
 # New sub-functionalities as per plan
-SubFunctionality.find_or_create_by!(functionality: material_mgmt, code: 'material_creation') do |sf|
-  sf.name = 'Material Creation'
-  sf.screen = 'create material screen'
-  sf.display_order = 3
-  sf.active = true
-end
-
 SubFunctionality.find_or_create_by!(functionality: material_mgmt, code: 'material_approver') do |sf|
   sf.name = 'Material Approver'
   sf.screen = 'approve material screen'
-  sf.display_order = 4
+  sf.display_order = 3
   sf.active = true
 end
 
 SubFunctionality.find_or_create_by!(functionality: material_mgmt, code: 'material_listing') do |sf|
   sf.name = 'Material Listing'
   sf.screen = 'material listing screen'
-  sf.display_order = 5
+  sf.display_order = 4
   sf.active = true
 end
 

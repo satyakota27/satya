@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_12_31_080454) do
+ActiveRecord::Schema[8.0].define(version: 2025_12_31_101357) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -31,7 +31,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_12_31_080454) do
   create_table "material_bom_components", force: :cascade do |t|
     t.bigint "material_id", null: false
     t.bigint "component_material_id", null: false
-    t.decimal "quantity", precision: 10, scale: 2, null: false
+    t.integer "quantity", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["component_material_id"], name: "index_material_bom_components_on_component_material_id"
@@ -48,12 +48,34 @@ ActiveRecord::Schema[8.0].define(version: 2025_12_31_080454) do
     t.boolean "has_bom", default: false, null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.text "approver_comments"
+    t.bigint "rejected_by_id"
+    t.bigint "approved_by_id"
+    t.datetime "rejected_at"
+    t.datetime "approved_at"
+    t.boolean "has_shelf_life", default: false, null: false
+    t.integer "shelf_life_years"
+    t.integer "shelf_life_months"
+    t.integer "shelf_life_weeks"
+    t.integer "shelf_life_days"
+    t.integer "shelf_life_hours"
+    t.integer "shelf_life_minutes"
+    t.integer "shelf_life_seconds"
+    t.boolean "has_minimum_stock_value", default: false, null: false
+    t.integer "minimum_stock_value"
+    t.boolean "has_minimum_reorder_value", default: false, null: false
+    t.integer "minimum_reorder_value"
+    t.string "tracking_type"
+    t.integer "sample_size"
+    t.index ["approved_by_id"], name: "index_materials_on_approved_by_id"
     t.index ["material_code"], name: "index_materials_on_material_code"
     t.index ["procurement_unit_id"], name: "index_materials_on_procurement_unit_id"
+    t.index ["rejected_by_id"], name: "index_materials_on_rejected_by_id"
     t.index ["sale_unit_id"], name: "index_materials_on_sale_unit_id"
     t.index ["state"], name: "index_materials_on_state"
     t.index ["tenant_id", "material_code"], name: "index_materials_on_tenant_id_and_material_code", unique: true
     t.index ["tenant_id"], name: "index_materials_on_tenant_id"
+    t.index ["tracking_type"], name: "index_materials_on_tracking_type"
   end
 
   create_table "sub_functionalities", force: :cascade do |t|

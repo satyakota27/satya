@@ -2,7 +2,7 @@ class MaterialBomComponent < ApplicationRecord
   belongs_to :material
   belongs_to :component_material, class_name: 'Material'
 
-  validates :quantity, presence: true, numericality: { greater_than: 0 }
+  validates :quantity, presence: true, numericality: { only_integer: true, greater_than: 0 }
   validate :prevent_self_reference
   validate :component_must_be_approved
 

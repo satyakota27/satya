@@ -20,6 +20,7 @@ Rails.application.routes.draw do
     end
     member do
       post :approve
+      post :reject
     end
     resources :material_bom_components, only: [:create, :destroy]
     resources :unit_of_measurements, path: 'unit-of-measurements'
