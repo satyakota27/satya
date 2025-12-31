@@ -12,59 +12,17 @@ function initProcessSteps() {
   const processStepForm = document.querySelector('form[action*="process_steps"]');
   if (processStepForm) {
     processStepForm.addEventListener('submit', function(e) {
-      console.log('=== Form Submit Handler ===');
-      
       // Ensure all added quality tests have their hidden inputs properly named
       const addedRows = document.querySelectorAll('#quality-tests-list .quality-test-row.quality-test-added');
-      console.log('Found', addedRows.length, 'added quality test rows');
       
       addedRows.forEach((row, index) => {
         const hiddenInput = row.querySelector('.quality-test-id');
         if (hiddenInput && hiddenInput.value) {
-          console.log(`Row ${index}: Value=${hiddenInput.value}, Name=${hiddenInput.name}`);
           if (!hiddenInput.name || hiddenInput.name !== 'process_step[quality_test_ids][]') {
-            console.warn(`Fixing missing name attribute on quality test input ${index}`);
-            hiddenInput.removeAttribute('name');
-            hiddenInput.setAttribute('name', 'process_step[quality_test_ids][]');
-            // Also try direct assignment
             hiddenInput.name = 'process_step[quality_test_ids][]';
-            console.log(`After fix: Name=${hiddenInput.name}`);
           }
-        } else if (hiddenInput && !hiddenInput.value) {
-          console.warn(`Row ${index}: Hidden input exists but has no value`);
-        } else {
-          console.warn(`Row ${index}: No hidden input found`);
         }
       });
-      
-      // Log all quality test IDs before submission
-      const qualityTestInputs = document.querySelectorAll('input[name="process_step[quality_test_ids][]"]');
-      const qualityTestIds = Array.from(qualityTestInputs).map(input => input.value).filter(id => id);
-      console.log('Form submitting with quality test IDs:', qualityTestIds);
-      console.log('Total inputs with correct name:', qualityTestInputs.length);
-      
-      if (qualityTestIds.length > 0) {
-        console.log('Quality test IDs found in form:', qualityTestIds);
-      } else {
-        console.warn('No quality test IDs found in form before submission');
-        // Log all quality test rows for debugging
-        const allRows = document.querySelectorAll('#quality-tests-list .quality-test-row');
-        console.log('Total quality test rows:', allRows.length);
-        allRows.forEach((row, index) => {
-          const hiddenInput = row.querySelector('.quality-test-id');
-          console.log(`Row ${index}:`, {
-            hasValue: hiddenInput ? hiddenInput.value : 'no input',
-            hasName: hiddenInput ? hiddenInput.name : 'no input',
-            isAdded: row.classList.contains('quality-test-added'),
-            className: row.className
-          });
-        });
-      }
-      
-      // Create FormData to verify what will be submitted
-      const formData = new FormData(processStepForm);
-      const submittedIds = formData.getAll('process_step[quality_test_ids][]');
-      console.log('FormData quality_test_ids:', submittedIds);
     });
   }
 }
@@ -104,19 +62,6 @@ function initProcessStepQualityTests() {
         return;
       }
       addTestBtn.dataset.processing = 'true';
-      
-      // Prevent duplicate row creation
-      const existingEmptyRows = testsList.querySelectorAll('.quality-test-row:not(.quality-test-added)');
-      if (existingEmptyRows.length > 0) {
-        // Focus on the first empty row instead of creating a new one
-        const firstEmptyRow = existingEmptyRows[0];
-        const searchInput = firstEmptyRow.querySelector('.quality-test-search');
-        if (searchInput) {
-          searchInput.focus();
-        }
-        addTestBtn.dataset.processing = 'false';
-        return;
-      }
       
       window.processStepQualityTestCounter++;
       const testRow = createProcessStepQualityTestRow(window.processStepQualityTestCounter);
@@ -290,8 +235,8 @@ function initProcessStepQualityTests() {
     const newHiddenInput = row.querySelector('.quality-test-id');
     if (currentTestId && newHiddenInput) {
       newHiddenInput.value = currentTestId;
-      // Don't restore the name attribute when editing - it will be set again when "Add" is clicked
-      newHiddenInput.removeAttribute('name');
+      // Keep the name attribute when editing so the value is still submitted if user doesn't change it
+      newHiddenInput.name = 'process_step[quality_test_ids][]';
     }
     
     // Initialize autocomplete for the new input
@@ -409,9 +354,8 @@ function initProcessStepQualityTests() {
                 searchInput.value = `${test.test_number} - ${test.description}`;
                 if (hiddenInput) {
                   hiddenInput.value = test.id;
-                  // Don't set name yet - it will be set when "Add" is clicked
-                  // But ensure it's ready to be set
-                  console.log('Quality test selected:', test.id, 'Row:', row);
+                  // Set the name attribute immediately when a test is selected
+                  hiddenInput.name = 'process_step[quality_test_ids][]';
                 }
                 dropdown.remove();
                 dropdown = null;

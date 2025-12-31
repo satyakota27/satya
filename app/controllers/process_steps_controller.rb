@@ -46,7 +46,16 @@ class ProcessStepsController < ApplicationController
         end
         
         # Handle Quality Tests
-        handle_quality_tests(@process_step, params)
+        begin
+          handle_quality_tests(@process_step, process_step_params)
+        rescue => e
+          render json: { 
+            success: false, 
+            errors: @process_step.errors.full_messages + [e.message],
+            error: "Failed to save quality tests: #{e.message}"
+          }, status: :unprocessable_entity
+          return
+        end
         
         render json: {
           success: true,
@@ -100,7 +109,13 @@ class ProcessStepsController < ApplicationController
         end
         
         # Handle Quality Tests
-        handle_quality_tests(@process_step, params)
+        begin
+          handle_quality_tests(@process_step, process_step_params)
+        rescue => e
+          flash.now[:alert] = "Process step was created but failed to save quality tests: #{e.message}"
+          render :new, status: :unprocessable_entity
+          return
+        end
         
         redirect_to process_steps_path, notice: 'Process step was successfully created.'
       else
@@ -136,7 +151,13 @@ class ProcessStepsController < ApplicationController
       end
       
       # Handle Quality Tests
-      handle_quality_tests(@process_step, params)
+      begin
+        handle_quality_tests(@process_step, process_step_params)
+      rescue => e
+        flash.now[:alert] = "Process step was updated but failed to save quality tests: #{e.message}"
+        render :edit, status: :unprocessable_entity
+        return
+      end
       
       redirect_to process_steps_path, notice: 'Process step was successfully updated.'
     else
@@ -367,24 +388,55 @@ class ProcessStepsController < ApplicationController
     params.require(:process_step).permit(:description, :estimated_days, :estimated_hours, :estimated_minutes, :estimated_seconds, :temp_id, :id, documents: [], quality_test_ids: [])
   end
 
-  def handle_quality_tests(process_step, params)
-    return unless params[:process_step].present?
+  def handle_quality_tests(process_step, permitted_params)
+    return unless permitted_params.present?
     
-    quality_test_ids = params[:process_step][:quality_test_ids] || []
+    quality_test_ids = permitted_params[:quality_test_ids] || []
+    quality_test_ids = quality_test_ids.reject(&:blank?)
     
-    # Remove all existing quality tests first
-    process_step.process_step_quality_tests.destroy_all
-    
-    # Associate quality tests with process step
-    quality_test_ids.each do |test_id|
-      next if test_id.blank?
+    # Use a transaction to ensure atomicity
+    ProcessStepQualityTest.transaction do
+      # Get current quality test IDs
+      current_test_ids = process_step.process_step_quality_tests.pluck(:quality_test_id)
       
-      quality_test = QualityTest.find_by(id: test_id)
-      next unless quality_test
+      # Find IDs to remove (current but not in new list)
+      ids_to_remove = current_test_ids - quality_test_ids.map(&:to_i)
       
-      # Create process step quality test association
-      process_step.process_step_quality_tests.create(quality_test: quality_test)
+      # Find IDs to add (in new list but not current)
+      ids_to_add = quality_test_ids.map(&:to_i) - current_test_ids
+      
+      # Remove associations that are no longer needed
+      if ids_to_remove.any?
+        process_step.process_step_quality_tests.where(quality_test_id: ids_to_remove).destroy_all
+      end
+      
+      # Add new associations
+      ids_to_add.each do |test_id|
+        quality_test = QualityTest.find_by(id: test_id)
+        if quality_test
+          # Use create! to raise errors if any occur
+          process_step.process_step_quality_tests.create!(quality_test: quality_test)
+        else
+          # Raise an error if the quality test doesn't exist
+          raise ActiveRecord::RecordNotFound, "Quality test with ID #{test_id} not found"
+        end
+      end
     end
+    
+  rescue ActiveRecord::RecordInvalid => e
+    # Log the error and add to the process step errors
+    Rails.logger.error "Failed to save quality test associations: #{e.message}"
+    process_step.errors.add(:quality_tests, "Failed to save quality test associations: #{e.message}")
+    raise e
+  rescue ActiveRecord::RecordNotFound => e
+    Rails.logger.error "Quality test not found: #{e.message}"
+    process_step.errors.add(:quality_tests, "One or more quality tests were not found")
+    raise e
+  rescue => e
+    Rails.logger.error "Unexpected error in handle_quality_tests: #{e.message}"
+    Rails.logger.error e.backtrace.join("\n")
+    process_step.errors.add(:quality_tests, "An unexpected error occurred while saving quality tests")
+    raise e
   end
 end
 
