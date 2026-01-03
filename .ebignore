@@ -1,0 +1,54 @@
+# Elastic Beanstalk ignore file
+# Similar to .gitignore but for EB deployments
+
+# Development files
+Procfile.dev
+.env
+.env.local
+.env.*.local
+
+# Test files
+test/
+spec/
+
+# Documentation
+README.md
+*.md
+
+# Logs
+log/*
+!log/.keep
+
+# Temporary files
+tmp/*
+!tmp/.keep
+
+# Node modules (will be installed during deployment)
+node_modules/
+
+# Storage (use S3 in production)
+storage/*
+
+# Kamal deployment files
+.kamal/
+config/deploy.yml
+
+# IDE files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+
+# Docker (if not using)
+Dockerfile
+docker-compose.yml
+

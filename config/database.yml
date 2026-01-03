@@ -81,18 +81,20 @@ test:
 production:
   primary: &primary_production
     <<: *default
-    database: satya_production
-    username: satya
-    password: <%= ENV["SATYA_DATABASE_PASSWORD"] %>
+    database: <%= ENV.fetch("RDS_DB_NAME", ENV.fetch("DATABASE_NAME", "satya_production")) %>
+    username: <%= ENV.fetch("RDS_USERNAME", ENV.fetch("DATABASE_USERNAME", "satya")) %>
+    password: <%= ENV.fetch("RDS_PASSWORD", ENV.fetch("DATABASE_PASSWORD", ENV["SATYA_DATABASE_PASSWORD"])) %>
+    host: <%= ENV.fetch("RDS_HOSTNAME", ENV.fetch("DATABASE_HOST", "localhost")) %>
+    port: <%= ENV.fetch("RDS_PORT", ENV.fetch("DATABASE_PORT", "5432")) %>
   cache:
     <<: *primary_production
-    database: satya_production_cache
+    database: <%= ENV.fetch("RDS_DB_NAME", ENV.fetch("DATABASE_NAME", "satya_production")) %>_cache
     migrations_paths: db/cache_migrate
   queue:
     <<: *primary_production
-    database: satya_production_queue
+    database: <%= ENV.fetch("RDS_DB_NAME", ENV.fetch("DATABASE_NAME", "satya_production")) %>_queue
     migrations_paths: db/queue_migrate
   cable:
     <<: *primary_production
-    database: satya_production_cable
+    database: <%= ENV.fetch("RDS_DB_NAME", ENV.fetch("DATABASE_NAME", "satya_production")) %>_cable
     migrations_paths: db/cable_migrate
