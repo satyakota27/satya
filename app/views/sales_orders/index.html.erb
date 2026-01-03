@@ -1,0 +1,52 @@
+<div>
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 sm:mb-6 gap-4">
+    <div class="flex-1">
+      <h1 class="text-2xl sm:text-3xl font-bold text-gray-900">Sales Orders</h1>
+      <p class="mt-1 sm:mt-2 text-sm text-gray-500">Manage your sales orders and customer purchase orders.</p>
+    </div>
+    <div class="flex-shrink-0">
+      <% if can? :create, SalesOrder %>
+        <%= link_to new_sales_order_path, class: "inline-flex items-center justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-colors" do %>
+          <svg class="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+          </svg>
+          New Sales Order
+        <% end %>
+      <% end %>
+    </div>
+  </div>
+
+  <!-- Search and Filter -->
+  <div class="bg-white shadow sm:rounded-lg mb-6 p-4">
+    <%= form_with url: sales_orders_path, method: :get, local: false, data: { turbo: false }, class: "space-y-3 sm:space-y-0 sm:flex sm:flex-wrap sm:gap-4" do |form| %>
+      <div class="flex-1 min-w-0 sm:min-w-[200px]">
+        <%= form.text_field :search, value: params[:search], placeholder: "Search by order number...", 
+            class: "shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md",
+            autocomplete: "off" %>
+      </div>
+      <div class="w-full sm:w-48">
+        <%= form.select :state, options_for_select([['All States', ''], ['Draft', 'draft'], ['Confirmed', 'confirmed'], ['Dispatched', 'dispatched'], ['Completed', 'completed'], ['Cancelled', 'cancelled']], params[:state]), {},
+            { class: "shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md" } %>
+      </div>
+      <div class="w-full sm:w-48">
+        <%= form.select :customer_id, options_from_collection_for_select(@customers || [], :id, :name, params[:customer_id]), 
+            { prompt: 'All Customers' },
+            { class: "shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md" } %>
+      </div>
+      <div class="flex gap-2 sm:flex-none">
+        <button type="submit" class="flex-1 sm:flex-none inline-flex items-center justify-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+          Search
+        </button>
+        <% if params[:search].present? || params[:state].present? || params[:customer_id].present? %>
+          <%= link_to "Clear", sales_orders_path, class: "flex-1 sm:flex-none inline-flex items-center justify-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50" %>
+        <% end %>
+      </div>
+    <% end %>
+  </div>
+
+  <div id="sales-orders-container">
+    <%= render 'sales_orders_list', sales_orders: @sales_orders %>
+    <%= render 'pagination', sales_orders: @sales_orders %>
+  </div>
+</div>
+

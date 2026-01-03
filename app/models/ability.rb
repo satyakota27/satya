@@ -221,5 +221,102 @@ class Ability
         end
       end
     end
+
+    # Sales Management permissions
+    if user.has_functionality?('sales_management')
+      # Customer permissions
+      if user.super_admin?
+        can :read, Customer
+        if user.has_permission?('create_customer')
+          can :create, Customer
+          can :update, Customer
+          can :destroy, Customer
+          can :toggle_active, Customer
+        end
+        if user.has_permission?('manage_customer')
+          can :update, Customer
+          can :toggle_active, Customer
+        end
+      else
+        can :read, Customer, tenant_id: user.tenant_id
+        if user.has_permission?('create_customer')
+          can :create, Customer
+          can :update, Customer, tenant_id: user.tenant_id
+          can :destroy, Customer do |customer|
+            customer.tenant_id == user.tenant_id && customer.sales_orders.empty?
+          end
+        end
+        if user.has_permission?('manage_customer')
+          can :update, Customer, tenant_id: user.tenant_id
+          can :toggle_active, Customer, tenant_id: user.tenant_id
+        end
+      end
+
+      # Sales Order permissions
+      if user.super_admin?
+        can :read, SalesOrder
+        if user.has_permission?('create_sale_order')
+          can :create, SalesOrder
+          can :update, SalesOrder do |order|
+            order.draft?
+          end
+          can :destroy, SalesOrder do |order|
+            order.draft?
+          end
+        end
+        if user.has_permission?('manage_sale_order')
+          can :update, SalesOrder do |order|
+            order.draft?
+          end
+          can :confirm, SalesOrder do |order|
+            order.draft?
+          end
+          can :dispatch, SalesOrder do |order|
+            order.confirmed?
+          end
+          can :complete, SalesOrder do |order|
+            order.dispatched?
+          end
+          can :cancel, SalesOrder do |order|
+            order.draft? || order.confirmed? || order.dispatched?
+          end
+        end
+      else
+        can :read, SalesOrder, tenant_id: user.tenant_id
+        if user.has_permission?('create_sale_order')
+          can :create, SalesOrder
+          can :update, SalesOrder do |order|
+            order.tenant_id == user.tenant_id && order.draft?
+          end
+          can :destroy, SalesOrder do |order|
+            order.tenant_id == user.tenant_id && order.draft?
+          end
+        end
+        if user.has_permission?('manage_sale_order')
+          can :update, SalesOrder do |order|
+            order.tenant_id == user.tenant_id && order.draft?
+          end
+          can :confirm, SalesOrder do |order|
+            order.tenant_id == user.tenant_id && order.draft?
+          end
+          can :dispatch, SalesOrder do |order|
+            order.tenant_id == user.tenant_id && order.confirmed?
+          end
+          can :complete, SalesOrder do |order|
+            order.tenant_id == user.tenant_id && order.dispatched?
+          end
+          can :cancel, SalesOrder do |order|
+            order.tenant_id == user.tenant_id && (order.draft? || order.confirmed? || order.dispatched?)
+          end
+        end
+      end
+
+      # Sales Order Line Item permissions (inherited from sales order update permission)
+      if user.super_admin?
+        can :manage, SalesOrderLineItem
+      else
+        can :manage, SalesOrderLineItem, sales_order: { tenant_id: user.tenant_id }
+      end
+    end
   end
 end

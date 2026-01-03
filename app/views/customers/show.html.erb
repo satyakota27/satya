@@ -1,0 +1,194 @@
+<div>
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 sm:mb-6 gap-4">
+    <div class="flex-1">
+      <h1 class="text-2xl sm:text-3xl font-bold text-gray-900"><%= @customer.name %></h1>
+      <p class="mt-1 sm:mt-2 text-sm text-gray-500"><%= @customer.customer_code %></p>
+    </div>
+    <div class="flex-shrink-0 flex gap-2">
+      <% if can? :update, @customer %>
+        <%= link_to edit_customer_path(@customer), class: "inline-flex items-center justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2" do %>
+          <svg class="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+          </svg>
+          Edit
+        <% end %>
+      <% end %>
+      <% if can? :toggle_active, @customer %>
+        <%= link_to toggle_active_customer_path(@customer), method: :patch, 
+            class: "inline-flex items-center justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50",
+            data: { confirm: "Are you sure you want to #{@customer.active? ? 'deactivate' : 'activate'} this customer?" } do %>
+          <%= @customer.active? ? 'Deactivate' : 'Activate' %>
+        <% end %>
+      <% end %>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+    <!-- Customer Details -->
+    <div class="bg-white shadow sm:rounded-lg">
+      <div class="px-4 py-5 sm:p-6">
+        <h3 class="text-lg font-medium text-gray-900 mb-4">Customer Details</h3>
+        <dl class="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2">
+          <div>
+            <dt class="text-sm font-medium text-gray-500">Status</dt>
+            <dd class="mt-1 text-sm text-gray-900"><%= customer_status_badge(@customer) %></dd>
+          </div>
+          <div>
+            <dt class="text-sm font-medium text-gray-500">Customer Code</dt>
+            <dd class="mt-1 text-sm text-gray-900"><%= @customer.customer_code %></dd>
+          </div>
+          <div>
+            <dt class="text-sm font-medium text-gray-500">Default Currency</dt>
+            <dd class="mt-1 text-sm text-gray-900"><%= @customer.default_currency %></dd>
+          </div>
+          <div>
+            <dt class="text-sm font-medium text-gray-500">Tax ID</dt>
+            <dd class="mt-1 text-sm text-gray-900"><%= @customer.tax_id || 'N/A' %></dd>
+          </div>
+          <div>
+            <dt class="text-sm font-medium text-gray-500">Credit Limit</dt>
+            <dd class="mt-1 text-sm text-gray-900"><%= @customer.credit_limit ? number_to_currency(@customer.credit_limit, unit: @customer.default_currency == 'USD' ? '$' : '₹') : 'N/A' %></dd>
+          </div>
+        </dl>
+      </div>
+    </div>
+
+    <!-- Billing Address -->
+    <div class="bg-white shadow sm:rounded-lg">
+      <div class="px-4 py-5 sm:p-6">
+        <h3 class="text-lg font-medium text-gray-900 mb-4">Billing Address</h3>
+        <% if @customer.billing_street_address.present? || @customer.billing_city.present? %>
+          <dl class="space-y-2">
+            <% if @customer.billing_street_address.present? %>
+              <div>
+                <dt class="text-sm font-medium text-gray-500">Street Address</dt>
+                <dd class="mt-1 text-sm text-gray-900"><%= @customer.billing_street_address %></dd>
+              </div>
+            <% end %>
+            <div class="grid grid-cols-2 gap-4">
+              <% if @customer.billing_city.present? %>
+                <div>
+                  <dt class="text-sm font-medium text-gray-500">City</dt>
+                  <dd class="mt-1 text-sm text-gray-900"><%= @customer.billing_city %></dd>
+                </div>
+              <% end %>
+              <% if @customer.billing_state.present? %>
+                <div>
+                  <dt class="text-sm font-medium text-gray-500">State</dt>
+                  <dd class="mt-1 text-sm text-gray-900"><%= @customer.billing_state %></dd>
+                </div>
+              <% end %>
+              <% if @customer.billing_postal_code.present? %>
+                <div>
+                  <dt class="text-sm font-medium text-gray-500">Postal Code</dt>
+                  <dd class="mt-1 text-sm text-gray-900"><%= @customer.billing_postal_code %></dd>
+                </div>
+              <% end %>
+              <% if @customer.billing_country.present? %>
+                <div>
+                  <dt class="text-sm font-medium text-gray-500">Country</dt>
+                  <dd class="mt-1 text-sm text-gray-900"><%= @customer.billing_country %></dd>
+                </div>
+              <% end %>
+            </div>
+          </dl>
+        <% else %>
+          <p class="text-sm text-gray-500">No billing address provided.</p>
+        <% end %>
+      </div>
+    </div>
+  </div>
+
+  <!-- Contact Details -->
+  <div class="bg-white shadow sm:rounded-lg mt-6">
+    <div class="px-4 py-5 sm:p-6">
+      <h3 class="text-lg font-medium text-gray-900 mb-4">Contact Details</h3>
+      <% if @customer.customer_contacts.any? %>
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <% @customer.customer_contacts.each do |contact| %>
+            <div class="border border-gray-200 rounded-lg p-4">
+              <h4 class="text-sm font-medium text-gray-900"><%= contact.name %></h4>
+              <% if contact.email.present? %>
+                <p class="mt-1 text-sm text-gray-600">Email: <%= contact.email %></p>
+              <% end %>
+              <% if contact.phone.present? %>
+                <p class="mt-1 text-sm text-gray-600">Phone: <%= contact.phone %></p>
+              <% end %>
+              <% if contact.remarks.present? %>
+                <p class="mt-2 text-sm text-gray-500"><%= contact.remarks %></p>
+              <% end %>
+            </div>
+          <% end %>
+        </div>
+      <% else %>
+        <p class="text-sm text-gray-500">No contacts added.</p>
+      <% end %>
+    </div>
+  </div>
+
+  <!-- Shipping Addresses -->
+  <div class="bg-white shadow sm:rounded-lg mt-6">
+    <div class="px-4 py-5 sm:p-6">
+      <h3 class="text-lg font-medium text-gray-900 mb-4">Shipping Addresses</h3>
+      <% if @customer.customer_shipping_addresses.any? %>
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <% @customer.customer_shipping_addresses.ordered.each do |address| %>
+            <div class="border border-gray-200 rounded-lg p-4 <%= 'ring-2 ring-indigo-500' if address.is_default? %>">
+              <div class="flex items-center justify-between mb-2">
+                <h4 class="text-sm font-medium text-gray-900"><%= address.name %></h4>
+                <% if address.is_default? %>
+                  <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-indigo-100 text-indigo-800">Default</span>
+                <% end %>
+              </div>
+              <div class="text-sm text-gray-600">
+                <p><%= address.full_address %></p>
+                <% if address.remarks.present? %>
+                  <p class="mt-2 text-gray-500"><%= address.remarks %></p>
+                <% end %>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      <% else %>
+        <p class="text-sm text-gray-500">No shipping addresses added.</p>
+      <% end %>
+    </div>
+  </div>
+
+  <!-- Recent Sales Orders -->
+  <div class="bg-white shadow sm:rounded-lg mt-6">
+    <div class="px-4 py-5 sm:p-6">
+      <h3 class="text-lg font-medium text-gray-900 mb-4">Recent Sales Orders</h3>
+      <% if @sales_orders.any? %>
+        <div class="flow-root">
+          <ul class="-my-5 divide-y divide-gray-200">
+            <% @sales_orders.each do |order| %>
+              <li class="py-4">
+                <div class="flex items-center space-x-4">
+                  <div class="flex-1 min-w-0">
+                    <%= link_to sales_order_path(order), class: "text-sm font-medium text-indigo-600 hover:text-indigo-900" do %>
+                      <%= order.sale_order_number %>
+                    <% end %>
+                    <p class="text-sm text-gray-500 truncate">
+                      <%= order.purchase_order_number %> - <%= format_currency(order.total_amount, order.currency) %>
+                    </p>
+                  </div>
+                  <div>
+                    <%= sales_order_state_badge(order.state) %>
+                  </div>
+                </div>
+              </li>
+            <% end %>
+          </ul>
+        </div>
+        <div class="mt-6">
+          <%= link_to sales_orders_path(customer_id: @customer.id), class: "w-full flex justify-center items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50" do %>
+            View all orders
+          <% end %>
+        </div>
+      <% else %>
+        <p class="text-sm text-gray-500">No sales orders yet.</p>
+      <% end %>
+    </div>
+  </div>
+</div>

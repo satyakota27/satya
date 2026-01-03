@@ -50,7 +50,7 @@
                 <% end %>
               </div>
               <!-- Mobile menu button -->
-              <% if current_user.super_admin? || current_user.has_functionality?('material_management') || current_user.has_functionality?('store_management') %>
+              <% if current_user.super_admin? || current_user.has_functionality?('material_management') || current_user.has_functionality?('store_management') || current_user.has_functionality?('sales_management') %>
                 <div class="ml-4 flex items-center lg:hidden">
                   <button type="button" id="mobile-menu-toggle" class="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500">
                     <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -76,7 +76,7 @@
     <% end %>
 
     <div class="flex flex-col lg:flex-row">
-      <% if user_signed_in? && (current_user.super_admin? || current_user.has_functionality?('material_management') || current_user.has_functionality?('store_management')) %>
+      <% if user_signed_in? && (current_user.super_admin? || current_user.has_functionality?('material_management') || current_user.has_functionality?('store_management') || current_user.has_functionality?('sales_management')) %>
         <!-- Mobile Sidebar Overlay -->
         <div id="mobile-sidebar-overlay" class="fixed inset-0 bg-gray-600 bg-opacity-75 z-40 lg:hidden hidden"></div>
         
@@ -189,6 +189,51 @@
                               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                             </svg>
                             <span class="sidebar-text ml-2 whitespace-nowrap">Warehouse Management</span>
+                          <% end %>
+                        <% end %>
+                      </div>
+                    <% end %>
+                  </div>
+                </div>
+              <% end %>
+
+              <% if current_user.has_functionality?('sales_management') %>
+                <div class="space-y-1">
+                  <div class="relative">
+                    <% default_sales_path = can?(:read, Customer) ? customers_path : (can?(:read, SalesOrder) ? sales_orders_path : '#') %>
+                    <%= link_to default_sales_path, 
+                        class: "group flex items-center justify-start px-3 py-2.5 text-sm font-medium rounded-lg transition-colors sidebar-link #{request.path.include?('customers') || request.path.include?('sales-orders') ? 'bg-indigo-50 text-indigo-700' : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'}" do %>
+                      <svg class="h-5 w-5 flex-shrink-0 sidebar-icon #{request.path.include?('customers') || request.path.include?('sales-orders') ? 'text-indigo-500' : 'text-gray-400 group-hover:text-gray-500' %>" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                      </svg>
+                      <span class="sidebar-text ml-3 whitespace-nowrap">Sales</span>
+                      <% if (can?(:read, Customer) || can?(:read, SalesOrder)) %>
+                        <button type="button" class="sales-submenu-toggle ml-2 p-1 rounded hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500" onclick="event.preventDefault(); event.stopPropagation();">
+                          <svg class="h-4 w-4 text-gray-500 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                          </svg>
+                        </button>
+                      <% end %>
+                    <% end %>
+                    
+                    <% if (can?(:read, Customer) || can?(:read, SalesOrder)) %>
+                      <div id="sales-submenu" class="sales-submenu mt-1 space-y-1 <%= (request.path.include?('customers') || request.path.include?('sales-orders')) ? '' : 'hidden' %>">
+                        <% if can?(:read, Customer) %>
+                          <%= link_to customers_path, 
+                              class: "group flex items-center justify-start pl-8 pr-3 py-2 text-sm font-medium rounded-lg transition-colors sidebar-link #{request.path.include?('customers') ? 'bg-indigo-50 text-indigo-700' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'}" do %>
+                            <svg class="h-4 w-4 flex-shrink-0 sidebar-icon #{request.path.include?('customers') ? 'text-indigo-500' : 'text-gray-400 group-hover:text-gray-500'}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-3-3H6a3 3 0 00-3 3v2h5M16 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                            </svg>
+                            <span class="sidebar-text ml-2 whitespace-nowrap">Customers</span>
+                          <% end %>
+                        <% end %>
+                        <% if can?(:read, SalesOrder) %>
+                          <%= link_to sales_orders_path, 
+                              class: "group flex items-center justify-start pl-8 pr-3 py-2 text-sm font-medium rounded-lg transition-colors sidebar-link #{request.path.include?('sales-orders') ? 'bg-indigo-50 text-indigo-700' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'}" do %>
+                            <svg class="h-4 w-4 flex-shrink-0 sidebar-icon #{request.path.include?('sales-orders') ? 'text-indigo-500' : 'text-gray-400 group-hover:text-gray-500'}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                            <span class="sidebar-text ml-2 whitespace-nowrap">Sale Orders</span>
                           <% end %>
                         <% end %>
                       </div>

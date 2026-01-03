@@ -1,0 +1,79 @@
+<div class="shipping-address-fields border border-gray-200 rounded-lg p-4 mb-4" data-index="<%= form.index %>">
+  <div class="flex items-center justify-between mb-4">
+    <h4 class="text-sm font-medium text-gray-900">Shipping Address <%= form.index.to_i + 1 %></h4>
+    <div class="flex items-center gap-2">
+      <label class="flex items-center">
+        <%= form.check_box :is_default, class: "h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded" %>
+        <span class="ml-2 text-sm text-gray-700">Default</span>
+      </label>
+      <button type="button" class="remove-shipping-address text-red-600 hover:text-red-900">
+        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <%= form.hidden_field :_destroy, class: "destroy-field" %>
+
+  <div class="mb-4">
+    <label class="flex items-center">
+      <input type="checkbox" class="same-as-billing h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded" data-index="<%= form.index %>">
+      <span class="ml-2 text-sm text-gray-700">Same as billing address</span>
+    </label>
+  </div>
+
+  <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+    <div>
+      <%= form.label :name, "Address Name/Label", class: "block text-sm font-medium text-gray-700" do %>
+        Address Name <span class="text-red-500">*</span>
+      <% end %>
+      <div class="mt-1">
+        <%= form.text_field :name, required: true, placeholder: "e.g., Main Warehouse, Branch Office", class: "shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md" %>
+      </div>
+    </div>
+
+    <div class="sm:col-span-2">
+      <%= form.label :street_address, "Street Address", class: "block text-sm font-medium text-gray-700" %>
+      <div class="mt-1">
+        <%= form.text_field :street_address, class: "shipping-street-address shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md" %>
+      </div>
+    </div>
+
+    <div>
+      <%= form.label :city, "City", class: "block text-sm font-medium text-gray-700" %>
+      <div class="mt-1">
+        <%= form.text_field :city, class: "shipping-city shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md" %>
+      </div>
+    </div>
+
+    <div>
+      <%= form.label :state, "State/Province", class: "block text-sm font-medium text-gray-700" %>
+      <div class="mt-1">
+        <%= form.text_field :state, class: "shipping-state shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md" %>
+      </div>
+    </div>
+
+    <div>
+      <%= form.label :postal_code, "Postal Code", class: "block text-sm font-medium text-gray-700" %>
+      <div class="mt-1">
+        <%= form.text_field :postal_code, class: "shipping-postal-code shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md" %>
+      </div>
+    </div>
+
+    <div>
+      <%= form.label :country, "Country", class: "block text-sm font-medium text-gray-700" %>
+      <div class="mt-1">
+        <%= form.text_field :country, class: "shipping-country shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md" %>
+      </div>
+    </div>
+
+    <div class="sm:col-span-2">
+      <%= form.label :remarks, "Remarks", class: "block text-sm font-medium text-gray-700" %>
+      <div class="mt-1">
+        <%= form.text_area :remarks, rows: 2, class: "shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md" %>
+      </div>
+    </div>
+  </div>
+</div>
+

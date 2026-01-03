@@ -1,0 +1,185 @@
+<div>
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 sm:mb-6 gap-4">
+    <div class="flex-1">
+      <h1 class="text-2xl sm:text-3xl font-bold text-gray-900"><%= @sales_order.sale_order_number %></h1>
+      <p class="mt-1 sm:mt-2 text-sm text-gray-500">
+        Customer: <%= link_to @sales_order.customer.name, customer_path(@sales_order.customer), class: "text-indigo-600 hover:text-indigo-900" %>
+      </p>
+    </div>
+    <div class="flex-shrink-0 flex gap-2">
+      <%= sales_order_workflow_actions(@sales_order) %>
+      <% if can?(:update, @sales_order) && @sales_order.draft? %>
+        <%= link_to edit_sales_order_path(@sales_order), class: "inline-flex items-center justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2" do %>
+          <svg class="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+          </svg>
+          Edit
+        <% end %>
+      <% end %>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+    <!-- Order Details -->
+    <div class="lg:col-span-2">
+      <div class="bg-white shadow sm:rounded-lg mb-6">
+        <div class="px-4 py-5 sm:p-6">
+          <h3 class="text-lg font-medium text-gray-900 mb-4">Order Details</h3>
+          <dl class="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2">
+            <div>
+              <dt class="text-sm font-medium text-gray-500">Status</dt>
+              <dd class="mt-1 text-sm text-gray-900"><%= sales_order_state_badge(@sales_order.state) %></dd>
+            </div>
+            <div>
+              <dt class="text-sm font-medium text-gray-500">Purchase Order Number</dt>
+              <dd class="mt-1 text-sm text-gray-900"><%= @sales_order.purchase_order_number %></dd>
+            </div>
+            <div>
+              <dt class="text-sm font-medium text-gray-500">Purchase Order Date</dt>
+              <dd class="mt-1 text-sm text-gray-900"><%= @sales_order.purchase_order_date.strftime('%B %d, %Y') %></dd>
+            </div>
+            <div>
+              <dt class="text-sm font-medium text-gray-500">Currency</dt>
+              <dd class="mt-1 text-sm text-gray-900"><%= @sales_order.currency %></dd>
+            </div>
+            <div>
+              <dt class="text-sm font-medium text-gray-500">Partial Dispatch Allowed</dt>
+              <dd class="mt-1 text-sm text-gray-900"><%= @sales_order.partial_dispatch_allowed? ? 'Yes' : 'No' %></dd>
+            </div>
+            <div class="sm:col-span-2">
+              <dt class="text-sm font-medium text-gray-500">Remarks</dt>
+              <dd class="mt-1 text-sm text-gray-900"><%= @sales_order.remarks || 'N/A' %></dd>
+            </div>
+          </dl>
+        </div>
+      </div>
+
+      <!-- Line Items -->
+      <div class="bg-white shadow sm:rounded-lg">
+        <div class="px-4 py-5 sm:p-6">
+          <h3 class="text-lg font-medium text-gray-900 mb-4">Line Items</h3>
+          <% if @line_items.any? %>
+            <div class="overflow-x-auto">
+              <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                  <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Material</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Unit Price</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Dispatch Date</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Line Total</th>
+                  </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                  <% @line_items.each do |item| %>
+                    <tr>
+                      <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm font-medium text-gray-900"><%= item.material.material_code %></div>
+                        <div class="text-sm text-gray-500"><%= truncate(item.material.description, length: 50) %></div>
+                      </td>
+                      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <%= item.quantity %> <%= item.material.sale_unit&.abbreviation || '' %>
+                      </td>
+                      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <%= format_currency(item.unit_price, @sales_order.currency) %>
+                      </td>
+                      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <%= item.dispatch_date.strftime('%b %d, %Y') %>
+                      </td>
+                      <td class="px-6 py-4 whitespace-nowrap">
+                        <%= line_item_dispatch_status(item) %>
+                      </td>
+                      <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 text-right">
+                        <%= format_currency(item.line_total, @sales_order.currency) %>
+                      </td>
+                    </tr>
+                  <% end %>
+                </tbody>
+                <tfoot class="bg-gray-50">
+                  <tr>
+                    <td colspan="5" class="px-6 py-4 text-right text-sm font-medium text-gray-900">Subtotal:</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 text-right">
+                      <%= format_currency(@sales_order.subtotal, @sales_order.currency) %>
+                    </td>
+                  </tr>
+                  <% if @sales_order.discount_amount > 0 %>
+                    <tr>
+                      <td colspan="5" class="px-6 py-4 text-right text-sm font-medium text-gray-900">Discount:</td>
+                      <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-red-600 text-right">
+                        -<%= format_currency(@sales_order.discount_amount, @sales_order.currency) %>
+                      </td>
+                    </tr>
+                  <% end %>
+                  <% if @sales_order.tax_amount > 0 %>
+                    <tr>
+                      <td colspan="5" class="px-6 py-4 text-right text-sm font-medium text-gray-900">Tax:</td>
+                      <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 text-right">
+                        <%= format_currency(@sales_order.tax_amount, @sales_order.currency) %>
+                      </td>
+                    </tr>
+                  <% end %>
+                  <tr>
+                    <td colspan="5" class="px-6 py-4 text-right text-sm font-bold text-gray-900">Total:</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900 text-right">
+                      <%= format_currency(@sales_order.total_amount, @sales_order.currency) %>
+                    </td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          <% else %>
+            <p class="text-sm text-gray-500">No line items.</p>
+          <% end %>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="lg:col-span-1">
+      <!-- Documents -->
+      <div class="bg-white shadow sm:rounded-lg mb-6">
+        <div class="px-4 py-5 sm:p-6">
+          <h3 class="text-lg font-medium text-gray-900 mb-4">Documents</h3>
+          <% if @sales_order.documents.attached? %>
+            <ul class="space-y-2">
+              <% @sales_order.documents.each do |document| %>
+                <li class="flex items-center justify-between text-sm">
+                  <%= link_to rails_blob_path(document, disposition: "attachment"), class: "text-indigo-600 hover:text-indigo-900 flex items-center" do %>
+                    <svg class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                    </svg>
+                    <%= document.filename %>
+                  <% end %>
+                  <% if can?(:update, @sales_order) %>
+                    <%= link_to remove_document_sales_order_path(@sales_order, document_id: document.id), method: :delete,
+                        class: "text-red-600 hover:text-red-900",
+                        data: { confirm: "Are you sure?" } do %>
+                      <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    <% end %>
+                  <% end %>
+                </li>
+              <% end %>
+            </ul>
+          <% else %>
+            <p class="text-sm text-gray-500">No documents attached.</p>
+          <% end %>
+          <% if can?(:update, @sales_order) %>
+            <div class="mt-4">
+              <input type="file" id="document-upload" class="hidden" accept=".pdf,.jpg,.jpeg,.png,.gif,.webp" data-sales-order-id="<%= @sales_order.id %>">
+              <button type="button" onclick="document.getElementById('document-upload').click()" class="w-full inline-flex justify-center items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                <svg class="-ml-1 mr-2 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                </svg>
+                Upload Document
+              </button>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+

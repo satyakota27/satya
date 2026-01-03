@@ -79,6 +79,32 @@ Rails.application.routes.draw do
     end
   end
 
+  # Customers routes
+  resources :customers do
+    member do
+      patch :toggle_active
+    end
+    collection do
+      get :search
+    end
+  end
+
+  # Sales Orders routes
+  resources :sales_orders, path: 'sales-orders' do
+    member do
+      post :confirm
+      post :mark_dispatched, as: :dispatch
+      post :complete
+      post :cancel
+      post :upload_document
+      delete :remove_document
+    end
+    collection do
+      get :search_materials
+    end
+    resources :sales_order_line_items, path: 'line-items', only: [:create, :update, :destroy]
+  end
+
   # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
 
   # Reveal health status on /up that returns 200 if the app boots with no exceptions, otherwise 500.

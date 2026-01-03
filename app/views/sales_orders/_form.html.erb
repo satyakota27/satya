@@ -1,0 +1,191 @@
+<%= form_with model: sales_order, local: true, id: 'sales-order-form' do |form| %>
+  <% if sales_order.errors.any? %>
+    <div class="mb-4 bg-red-50 border-l-4 border-red-400 p-4 rounded-md">
+      <div class="flex">
+        <div class="flex-shrink-0">
+          <svg class="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+          </svg>
+        </div>
+        <div class="ml-3">
+          <h3 class="text-sm font-medium text-red-800">
+            <%= pluralize(sales_order.errors.count, "error") %> prohibited this sales order from being saved:
+          </h3>
+          <div class="mt-2 text-sm text-red-700">
+            <ul class="list-disc list-inside space-y-1">
+              <% sales_order.errors.full_messages.each do |message| %>
+                <li><%= message %></li>
+              <% end %>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  <% end %>
+
+  <div class="bg-white shadow sm:rounded-lg mb-6">
+    <div class="px-4 py-5 sm:p-6 space-y-6">
+      <h3 class="text-lg font-medium text-gray-900">Order Information</h3>
+      
+      <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
+        <div>
+          <%= form.label :customer_id, "Customer", class: "block text-sm font-medium text-gray-700" do %>
+            Customer <span class="text-red-500">*</span>
+          <% end %>
+          <div class="mt-1">
+            <%= form.select :customer_id, options_from_collection_for_select(@customers, :id, :name, sales_order.customer_id),
+                { prompt: 'Select Customer' },
+                { required: true, class: "shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md", id: 'customer-select' } %>
+          </div>
+        </div>
+
+        <div>
+          <%= form.label :purchase_order_number, "Purchase Order Number", class: "block text-sm font-medium text-gray-700" do %>
+            Purchase Order Number <span class="text-red-500">*</span>
+          <% end %>
+          <div class="mt-1">
+            <%= form.text_field :purchase_order_number, required: true, class: "shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md" %>
+          </div>
+        </div>
+
+        <div>
+          <%= form.label :purchase_order_date, "Purchase Order Date", class: "block text-sm font-medium text-gray-700" do %>
+            Purchase Order Date <span class="text-red-500">*</span>
+          <% end %>
+          <div class="mt-1">
+            <%= form.date_field :purchase_order_date, required: true, class: "shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md" %>
+          </div>
+        </div>
+
+        <div>
+          <%= form.label :currency, class: "block text-sm font-medium text-gray-700" %>
+          <div class="mt-1">
+            <%= form.select :currency, options_for_select([['INR', 'INR'], ['USD', 'USD']], sales_order.currency || 'INR'),
+                {},
+                { class: "shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md" } %>
+          </div>
+        </div>
+
+        <div>
+          <%= form.label :partial_dispatch_allowed, class: "flex items-center" do %>
+            <%= form.check_box :partial_dispatch_allowed, class: "h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded" %>
+            <span class="ml-2 text-sm text-gray-700">Allow Partial Dispatch</span>
+          <% end %>
+        </div>
+
+        <div class="sm:col-span-2">
+          <%= form.label :remarks, class: "block text-sm font-medium text-gray-700" %>
+          <div class="mt-1">
+            <%= form.text_area :remarks, rows: 3, class: "shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md" %>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Line Items -->
+  <div class="bg-white shadow sm:rounded-lg mb-6">
+    <div class="px-4 py-5 sm:p-6">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-medium text-gray-900">Line Items</h3>
+        <button type="button" id="add-line-item" class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+          <svg class="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+          </svg>
+          Add Line Item
+        </button>
+      </div>
+
+      <div id="line-items-container" style="position: relative; overflow: visible;">
+        <table class="min-w-full divide-y divide-gray-200" style="position: relative;">
+          <thead class="bg-gray-50">
+            <tr>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Material</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Unit Price</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Discount %</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tax %</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Dispatch Date</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Line Total</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"></th>
+            </tr>
+          </thead>
+          <tbody id="line-items-tbody" class="bg-white divide-y divide-gray-200">
+            <% if sales_order.persisted? && sales_order.sales_order_line_items.any? %>
+              <% sales_order.sales_order_line_items.each_with_index do |item, index| %>
+                <%= render 'line_item_fields', form: form, item: item, index: index %>
+              <% end %>
+            <% else %>
+              <tr id="no-items-message">
+                <td colspan="8" class="px-4 py-8 text-center text-sm text-gray-500">
+                  No line items. Click "Add Line Item" to add materials.
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+          <tfoot class="bg-gray-50">
+            <tr>
+              <td colspan="6" class="px-4 py-3 text-right text-sm font-medium text-gray-900">Subtotal:</td>
+              <td class="px-4 py-3 text-sm font-medium text-gray-900" id="order-subtotal">₹0.00</td>
+              <td></td>
+            </tr>
+            <tr>
+              <td colspan="6" class="px-4 py-3 text-right text-sm font-medium text-gray-900">Total:</td>
+              <td class="px-4 py-3 text-sm font-bold text-gray-900" id="order-total">₹0.00</td>
+              <td></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Documents -->
+  <div class="bg-white shadow sm:rounded-lg mb-6">
+    <div class="px-4 py-5 sm:p-6">
+      <h3 class="text-lg font-medium text-gray-900 mb-4">Documents</h3>
+      <div class="mt-1">
+        <% if sales_order.persisted? %>
+          <input type="file" id="document-upload" multiple class="hidden" accept=".pdf,.jpg,.jpeg,.png,.gif,.webp" data-sales-order-id="<%= sales_order.id %>">
+          <button type="button" onclick="document.getElementById('document-upload').click()" class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+            <svg class="-ml-1 mr-2 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+            </svg>
+            Upload Documents
+          </button>
+          <div id="uploaded-documents" class="mt-4 space-y-2">
+            <% if sales_order.documents.attached? %>
+              <% sales_order.documents.each do |document| %>
+                <div class="flex items-center justify-between text-sm p-2 bg-gray-50 rounded">
+                  <span class="text-gray-700">
+                    <%= link_to document.filename, rails_blob_path(document, disposition: "attachment"), class: "text-indigo-600 hover:text-indigo-900" %>
+                  </span>
+                  <div class="flex items-center gap-2">
+                    <span class="text-gray-500"><%= number_to_human_size(document.byte_size) %></span>
+                    <% if can?(:update, sales_order) %>
+                      <%= link_to remove_document_sales_order_path(sales_order, document_id: document.id), method: :delete, 
+                          data: { confirm: "Are you sure you want to remove this document?" },
+                          class: "text-red-600 hover:text-red-900" do %>
+                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      <% end %>
+                    <% end %>
+                  </div>
+                </div>
+              <% end %>
+            <% end %>
+          </div>
+        <% else %>
+          <p class="text-sm text-gray-500">Documents can be uploaded after the sales order is created.</p>
+        <% end %>
+      </div>
+    </div>
+  </div>
+
+  <div class="flex justify-end space-x-3">
+    <%= link_to 'Cancel', sales_orders_path, class: "inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500" %>
+    <%= form.submit sales_order.persisted? ? 'Update Sales Order' : 'Create Sales Order', class: "inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500" %>
+  </div>
+<% end %>
+

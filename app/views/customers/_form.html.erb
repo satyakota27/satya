@@ -1,0 +1,177 @@
+<%= form_with model: customer, local: true, id: 'customer-form' do |form| %>
+  <% if customer.errors.any? %>
+    <div class="mb-4 bg-red-50 border-l-4 border-red-400 p-4 rounded-md">
+      <div class="flex">
+        <div class="flex-shrink-0">
+          <svg class="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+          </svg>
+        </div>
+        <div class="ml-3">
+          <h3 class="text-sm font-medium text-red-800">
+            <%= pluralize(customer.errors.count, "error") %> prohibited this customer from being saved:
+          </h3>
+          <div class="mt-2 text-sm text-red-700">
+            <ul class="list-disc list-inside space-y-1">
+              <% customer.errors.full_messages.each do |message| %>
+                <li><%= message %></li>
+              <% end %>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  <% end %>
+
+  <!-- Basic Information -->
+  <div class="bg-white shadow sm:rounded-lg mb-6">
+    <div class="px-4 py-5 sm:p-6">
+      <h3 class="text-lg font-medium text-gray-900 mb-4">Basic Information</h3>
+      <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
+        <div class="sm:col-span-2">
+          <%= form.label :name, class: "block text-sm font-medium text-gray-700" do %>
+            Name <span class="text-red-500">*</span>
+          <% end %>
+          <div class="mt-1">
+            <%= form.text_field :name, required: true, class: "shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md" %>
+          </div>
+          <p class="mt-1 text-xs text-gray-500">Customer code will be auto-generated (format: cust-{tenant-code}-{number})</p>
+        </div>
+
+        <div>
+          <%= form.label :default_currency, "Default Currency", class: "block text-sm font-medium text-gray-700" do %>
+            Default Currency <span class="text-red-500">*</span>
+          <% end %>
+          <div class="mt-1">
+            <%= form.select :default_currency, options_for_select([['INR', 'INR'], ['USD', 'USD']], customer.default_currency || 'INR'),
+                {},
+                { required: true, class: "shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md" } %>
+          </div>
+        </div>
+
+        <div>
+          <%= form.label :tax_id, "Tax ID", class: "block text-sm font-medium text-gray-700" %>
+          <div class="mt-1">
+            <%= form.text_field :tax_id, class: "shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md" %>
+          </div>
+        </div>
+
+        <div>
+          <%= form.label :credit_limit, "Credit Limit", class: "block text-sm font-medium text-gray-700" %>
+          <div class="mt-1">
+            <%= form.number_field :credit_limit, step: 0.01, class: "shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md" %>
+          </div>
+        </div>
+
+        <div>
+          <%= form.label :active, class: "flex items-center" do %>
+            <%= form.check_box :active, class: "h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded" %>
+            <span class="ml-2 text-sm text-gray-700">Active</span>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Billing Address -->
+  <div class="bg-white shadow sm:rounded-lg mb-6">
+    <div class="px-4 py-5 sm:p-6">
+      <h3 class="text-lg font-medium text-gray-900 mb-4">Billing Address</h3>
+      <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
+        <div class="sm:col-span-2">
+          <%= form.label :billing_street_address, "Street Address", class: "block text-sm font-medium text-gray-700" %>
+          <div class="mt-1">
+            <%= form.text_field :billing_street_address, class: "shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md" %>
+          </div>
+        </div>
+
+        <div>
+          <%= form.label :billing_city, "City", class: "block text-sm font-medium text-gray-700" %>
+          <div class="mt-1">
+            <%= form.text_field :billing_city, class: "shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md" %>
+          </div>
+        </div>
+
+        <div>
+          <%= form.label :billing_state, "State/Province", class: "block text-sm font-medium text-gray-700" %>
+          <div class="mt-1">
+            <%= form.text_field :billing_state, class: "shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md" %>
+          </div>
+        </div>
+
+        <div>
+          <%= form.label :billing_postal_code, "Postal Code", class: "block text-sm font-medium text-gray-700" %>
+          <div class="mt-1">
+            <%= form.text_field :billing_postal_code, class: "shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md" %>
+          </div>
+        </div>
+
+        <div>
+          <%= form.label :billing_country, "Country", class: "block text-sm font-medium text-gray-700" %>
+          <div class="mt-1">
+            <%= form.text_field :billing_country, class: "shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md" %>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Contact Details -->
+  <div class="bg-white shadow sm:rounded-lg mb-6">
+    <div class="px-4 py-5 sm:p-6">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-medium text-gray-900">Contact Details</h3>
+        <button type="button" id="add-contact" class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+          <svg class="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+          </svg>
+          Add Contact
+        </button>
+      </div>
+
+      <div id="contacts-container">
+        <% if customer.customer_contacts.any? %>
+          <%= form.fields_for :customer_contacts do |contact_form| %>
+            <%= render 'contact_fields', form: contact_form %>
+          <% end %>
+        <% else %>
+          <div id="no-contacts-message" class="text-center py-4 text-sm text-gray-500">
+            No contacts added. Click "Add Contact" to add contact details.
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+
+  <!-- Shipping Addresses -->
+  <div class="bg-white shadow sm:rounded-lg mb-6">
+    <div class="px-4 py-5 sm:p-6">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-medium text-gray-900">Shipping Addresses</h3>
+        <button type="button" id="add-shipping-address" class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+          <svg class="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+          </svg>
+          Add Shipping Address
+        </button>
+      </div>
+
+      <div id="shipping-addresses-container">
+        <% if customer.customer_shipping_addresses.any? %>
+          <%= form.fields_for :customer_shipping_addresses do |address_form| %>
+            <%= render 'shipping_address_fields', form: address_form, customer: customer %>
+          <% end %>
+        <% else %>
+          <div id="no-addresses-message" class="text-center py-4 text-sm text-gray-500">
+            No shipping addresses added. Click "Add Shipping Address" to add addresses.
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+
+  <div class="flex justify-end space-x-3">
+    <%= link_to 'Cancel', customers_path, class: "inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500" %>
+    <%= form.submit customer.persisted? ? 'Update Customer' : 'Create Customer', class: "inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500" %>
+  </div>
+<% end %>

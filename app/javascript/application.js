@@ -7,9 +7,11 @@ import initQualityTests from "./quality_tests"
 import initProcessSteps from "./process_steps"
 import initInventoryItems from "./inventory_items"
 import initWarehouseLocations from "./warehouse_locations"
+import initSalesOrders from "./sales_orders"
+import initCustomers from "./customers"
 
-initFunctionalitySelection()
-
+document.addEventListener('turbo:load', initFunctionalitySelection)
+document.addEventListener('DOMContentLoaded', initFunctionalitySelection)
 document.addEventListener('turbo:load', initMaterials)
 document.addEventListener('DOMContentLoaded', initMaterials)
 document.addEventListener('turbo:load', initQualityTests)
@@ -20,3 +22,7 @@ document.addEventListener('turbo:load', initInventoryItems)
 document.addEventListener('DOMContentLoaded', initInventoryItems)
 document.addEventListener('turbo:load', initWarehouseLocations)
 document.addEventListener('DOMContentLoaded', initWarehouseLocations)
+document.addEventListener('turbo:load', initSalesOrders)
+document.addEventListener('DOMContentLoaded', initSalesOrders)
+document.addEventListener('turbo:load', initCustomers)
+document.addEventListener('DOMContentLoaded', initCustomers)

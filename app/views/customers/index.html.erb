@@ -1,0 +1,47 @@
+<div>
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 sm:mb-6 gap-4">
+    <div class="flex-1">
+      <h1 class="text-2xl sm:text-3xl font-bold text-gray-900">Customers</h1>
+      <p class="mt-1 sm:mt-2 text-sm text-gray-500">Manage your customer database.</p>
+    </div>
+    <div class="flex-shrink-0">
+      <% if can? :create, Customer %>
+        <%= link_to new_customer_path, class: "inline-flex items-center justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-colors" do %>
+          <svg class="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+          </svg>
+          New Customer
+        <% end %>
+      <% end %>
+    </div>
+  </div>
+
+  <!-- Search and Filter -->
+  <div class="bg-white shadow sm:rounded-lg mb-6 p-4">
+    <%= form_with url: customers_path, method: :get, local: false, data: { turbo: false }, class: "space-y-3 sm:space-y-0 sm:flex sm:flex-wrap sm:gap-4" do |form| %>
+      <div class="flex-1 min-w-0 sm:min-w-[200px]">
+        <%= form.text_field :search, value: params[:search], placeholder: "Search by code, name, email...", 
+            class: "shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md",
+            autocomplete: "off" %>
+      </div>
+      <div class="w-full sm:w-48">
+        <%= form.select :status, options_for_select([['All', ''], ['Active', 'active'], ['Inactive', 'inactive']], params[:status]), {},
+            { class: "shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md" } %>
+      </div>
+      <div class="flex gap-2 sm:flex-none">
+        <button type="submit" class="flex-1 sm:flex-none inline-flex items-center justify-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+          Search
+        </button>
+        <% if params[:search].present? || params[:status].present? %>
+          <%= link_to "Clear", customers_path, class: "flex-1 sm:flex-none inline-flex items-center justify-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50" %>
+        <% end %>
+      </div>
+    <% end %>
+  </div>
+
+  <div id="customers-container">
+    <%= render 'customers_list', customers: @customers %>
+    <%= render 'pagination', customers: @customers %>
+  </div>
+</div>
+

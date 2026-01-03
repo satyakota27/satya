@@ -1,25 +1,18 @@
 // Functionality selection UI interactions
-export default function() {
-  // Initialize on DOM ready
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initFunctionalitySelection);
-  } else {
-    initFunctionalitySelection();
-  }
-  
-  // Also initialize on Turbo navigation
-  document.addEventListener('turbo:load', initFunctionalitySelection);
-}
-
-function initFunctionalitySelection() {
+export default function initFunctionalitySelection() {
   const functionalitySelection = document.getElementById('functionality-selection');
   if (!functionalitySelection) return;
 
+  // Prevent duplicate event listeners
+  if (functionalitySelection.dataset.initialized === 'true') return;
+  functionalitySelection.dataset.initialized = 'true';
+
   // Toggle expand/collapse for functionality sections
   functionalitySelection.addEventListener('click', function(e) {
-    if (e.target.classList.contains('functionality-toggle') || e.target.closest('.functionality-toggle')) {
+    const button = e.target.closest('.functionality-toggle');
+    if (button) {
       e.preventDefault();
-      const button = e.target.classList.contains('functionality-toggle') ? e.target : e.target.closest('.functionality-toggle');
+      e.stopPropagation();
       const functionalityId = button.dataset.functionalityId;
       const subItems = document.querySelector(`.functionality-sub-items[data-functionality-id="${functionalityId}"]`);
       const expandText = button.querySelector('.expand-text');

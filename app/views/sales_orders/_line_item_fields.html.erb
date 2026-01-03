@@ -1,0 +1,68 @@
+<tr class="line-item-row" data-index="<%= index %>">
+  <td class="px-4 py-3" style="position: relative;">
+    <%= hidden_field_tag "sales_order[line_items][#{index}][id]", item.id if item.persisted? %>
+    <input type="text" 
+           class="material-search shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md" 
+           placeholder="Search material..."
+           data-index="<%= index %>"
+           value="<%= item.material.material_code if item.material.present? %>"
+           autocomplete="off">
+    <input type="hidden" name="sales_order[line_items][<%= index %>][material_id]" class="material-id" value="<%= item.material_id if item.material_id.present? %>">
+    <div class="material-description text-xs text-gray-500 mt-1">
+      <%= truncate(item.material.description, length: 40) if item.material.present? %>
+    </div>
+  </td>
+  <td class="px-4 py-3">
+    <input type="number" 
+           name="sales_order[line_items][<%= index %>][quantity]" 
+           class="line-item-quantity shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md" 
+           value="<%= item.quantity %>"
+           min="1"
+           step="1"
+           required>
+  </td>
+  <td class="px-4 py-3">
+    <input type="number" 
+           name="sales_order[line_items][<%= index %>][unit_price]" 
+           class="line-item-unit-price shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md" 
+           value="<%= item.unit_price %>"
+           min="0"
+           step="0.01"
+           required>
+  </td>
+  <td class="px-4 py-3">
+    <input type="number" 
+           name="sales_order[line_items][<%= index %>][discount_percentage]" 
+           class="line-item-discount shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md" 
+           value="<%= item.discount_percentage || 0 %>"
+           min="0"
+           max="100"
+           step="0.01">
+  </td>
+  <td class="px-4 py-3">
+    <input type="number" 
+           name="sales_order[line_items][<%= index %>][tax_percentage]" 
+           class="line-item-tax shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md" 
+           value="<%= item.tax_percentage || 0 %>"
+           min="0"
+           step="0.01">
+  </td>
+  <td class="px-4 py-3">
+    <input type="date" 
+           name="sales_order[line_items][<%= index %>][dispatch_date]" 
+           class="line-item-dispatch-date shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md" 
+           value="<%= item.dispatch_date %>"
+           required>
+  </td>
+  <td class="px-4 py-3">
+    <span class="line-item-total text-sm font-medium text-gray-900">₹0.00</span>
+  </td>
+  <td class="px-4 py-3">
+    <button type="button" class="remove-line-item text-red-600 hover:text-red-900">
+      <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+      </svg>
+    </button>
+  </td>
+</tr>
+

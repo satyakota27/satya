@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_01_02_131354) do
+ActiveRecord::Schema[8.0].define(version: 2026_01_03_160002) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -41,6 +41,62 @@ ActiveRecord::Schema[8.0].define(version: 2026_01_02_131354) do
     t.bigint "blob_id", null: false
     t.string "variation_digest", null: false
     t.index ["blob_id", "variation_digest"], name: "index_active_storage_variant_records_uniqueness", unique: true
+  end
+
+  create_table "customer_contacts", force: :cascade do |t|
+    t.bigint "customer_id", null: false
+    t.string "name", null: false
+    t.string "email"
+    t.string "phone"
+    t.text "remarks"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["customer_id"], name: "index_customer_contacts_on_customer_id"
+  end
+
+  create_table "customer_shipping_addresses", force: :cascade do |t|
+    t.bigint "customer_id", null: false
+    t.string "name", null: false
+    t.string "street_address"
+    t.string "city"
+    t.string "state"
+    t.string "postal_code"
+    t.string "country"
+    t.boolean "is_default", default: false, null: false
+    t.text "remarks"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["customer_id"], name: "index_customer_shipping_addresses_on_customer_id"
+    t.index ["is_default"], name: "index_customer_shipping_addresses_on_is_default"
+  end
+
+  create_table "customers", force: :cascade do |t|
+    t.bigint "tenant_id", null: false
+    t.string "customer_code"
+    t.string "name", null: false
+    t.string "contact_person"
+    t.string "email"
+    t.string "phone"
+    t.text "billing_address"
+    t.text "shipping_address"
+    t.string "tax_id"
+    t.string "tax_category"
+    t.text "payment_terms"
+    t.decimal "credit_limit", precision: 12, scale: 2
+    t.boolean "active", default: true, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.string "default_currency", default: "INR", null: false
+    t.string "billing_street_address"
+    t.string "billing_city"
+    t.string "billing_state"
+    t.string "billing_postal_code"
+    t.string "billing_country"
+    t.index ["active"], name: "index_customers_on_active"
+    t.index ["customer_code"], name: "index_customers_on_customer_code"
+    t.index ["email"], name: "index_customers_on_email"
+    t.index ["tenant_id", "customer_code"], name: "index_customers_on_tenant_id_and_customer_code", unique: true
+    t.index ["tenant_id"], name: "index_customers_on_tenant_id"
   end
 
   create_table "functionalities", force: :cascade do |t|
@@ -193,6 +249,60 @@ ActiveRecord::Schema[8.0].define(version: 2026_01_02_131354) do
     t.index ["tenant_id"], name: "index_quality_tests_on_tenant_id"
   end
 
+  create_table "sales_order_line_items", force: :cascade do |t|
+    t.bigint "sales_order_id", null: false
+    t.bigint "material_id", null: false
+    t.integer "quantity", null: false
+    t.decimal "unit_price", precision: 12, scale: 2, null: false
+    t.decimal "basic_value", precision: 12, scale: 2
+    t.decimal "discount_percentage", precision: 5, scale: 2, default: "0.0"
+    t.decimal "discount_amount", precision: 12, scale: 2, default: "0.0"
+    t.decimal "tax_percentage", precision: 5, scale: 2, default: "0.0"
+    t.decimal "tax_amount", precision: 12, scale: 2, default: "0.0"
+    t.decimal "line_total", precision: 12, scale: 2, default: "0.0"
+    t.date "dispatch_date", null: false
+    t.integer "dispatched_quantity", default: 0, null: false
+    t.text "notes"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["dispatch_date"], name: "index_sales_order_line_items_on_dispatch_date"
+    t.index ["material_id"], name: "index_sales_order_line_items_on_material_id"
+    t.index ["sales_order_id"], name: "index_sales_order_line_items_on_sales_order_id"
+  end
+
+  create_table "sales_orders", force: :cascade do |t|
+    t.bigint "tenant_id", null: false
+    t.bigint "customer_id", null: false
+    t.string "sale_order_number"
+    t.string "purchase_order_number"
+    t.date "purchase_order_date", null: false
+    t.string "state", default: "draft", null: false
+    t.string "currency", default: "INR", null: false
+    t.decimal "subtotal", precision: 12, scale: 2, default: "0.0"
+    t.decimal "discount_amount", precision: 12, scale: 2, default: "0.0"
+    t.decimal "tax_amount", precision: 12, scale: 2, default: "0.0"
+    t.decimal "total_amount", precision: 12, scale: 2, default: "0.0"
+    t.boolean "partial_dispatch_allowed", default: false, null: false
+    t.text "remarks"
+    t.datetime "confirmed_at"
+    t.datetime "dispatched_at"
+    t.datetime "completed_at"
+    t.datetime "cancelled_at"
+    t.bigint "confirmed_by_id"
+    t.bigint "cancelled_by_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["cancelled_by_id"], name: "index_sales_orders_on_cancelled_by_id"
+    t.index ["confirmed_by_id"], name: "index_sales_orders_on_confirmed_by_id"
+    t.index ["customer_id"], name: "index_sales_orders_on_customer_id"
+    t.index ["purchase_order_date"], name: "index_sales_orders_on_purchase_order_date"
+    t.index ["purchase_order_number"], name: "index_sales_orders_on_purchase_order_number"
+    t.index ["sale_order_number"], name: "index_sales_orders_on_sale_order_number"
+    t.index ["state"], name: "index_sales_orders_on_state"
+    t.index ["tenant_id", "sale_order_number"], name: "index_sales_orders_on_tenant_id_and_sale_order_number", unique: true
+    t.index ["tenant_id"], name: "index_sales_orders_on_tenant_id"
+  end
+
   create_table "sub_functionalities", force: :cascade do |t|
     t.bigint "functionality_id", null: false
     t.string "name", null: false
@@ -293,6 +403,9 @@ ActiveRecord::Schema[8.0].define(version: 2026_01_02_131354) do
 
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
+  add_foreign_key "customer_contacts", "customers"
+  add_foreign_key "customer_shipping_addresses", "customers"
+  add_foreign_key "customers", "tenants"
   add_foreign_key "inventory_items", "materials"
   add_foreign_key "inventory_items", "tenants"
   add_foreign_key "inventory_items", "users", column: "created_by_id"
@@ -310,6 +423,12 @@ ActiveRecord::Schema[8.0].define(version: 2026_01_02_131354) do
   add_foreign_key "process_step_quality_tests", "quality_tests"
   add_foreign_key "process_steps", "tenants"
   add_foreign_key "quality_tests", "tenants"
+  add_foreign_key "sales_order_line_items", "materials"
+  add_foreign_key "sales_order_line_items", "sales_orders"
+  add_foreign_key "sales_orders", "customers"
+  add_foreign_key "sales_orders", "tenants"
+  add_foreign_key "sales_orders", "users", column: "cancelled_by_id"
+  add_foreign_key "sales_orders", "users", column: "confirmed_by_id"
   add_foreign_key "sub_functionalities", "functionalities"
   add_foreign_key "subscriptions", "tenants"
   add_foreign_key "unit_of_measurements", "tenants"

@@ -1,0 +1,28 @@
+<% if sales_orders.any? %>
+  <div class="bg-white shadow overflow-hidden sm:rounded-md">
+    <ul class="divide-y divide-gray-200">
+      <% sales_orders.each do |sales_order| %>
+        <%= render 'sales_order', sales_order: sales_order %>
+      <% end %>
+    </ul>
+  </div>
+<% else %>
+  <div class="bg-white shadow sm:rounded-lg p-6 text-center">
+    <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+    </svg>
+    <h3 class="mt-2 text-sm font-medium text-gray-900">No sales orders</h3>
+    <p class="mt-1 text-sm text-gray-500">Get started by creating a new sales order.</p>
+    <% if can? :create, SalesOrder %>
+      <div class="mt-6">
+        <%= link_to new_sales_order_path, class: "inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700" do %>
+          <svg class="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+          </svg>
+          New Sales Order
+        <% end %>
+      </div>
+    <% end %>
+  </div>
+<% end %>
+
