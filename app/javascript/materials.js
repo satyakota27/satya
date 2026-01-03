@@ -14,6 +14,9 @@ function initMaterials() {
   // Material Submenu Toggle
   initMaterialSubmenu();
   
+  // Stores Submenu Toggle
+  initStoresSubmenu();
+  
   // Dynamic Material Search
   initDynamicMaterialSearch();
   
@@ -2088,6 +2091,54 @@ function initProcessSteps() {
   
   // Add "Create New" button functionality if needed
   // This would be similar to quality tests - allowing creation on the fly
+}
+
+function initStoresSubmenu() {
+  const submenu = document.getElementById('stores-submenu');
+  const toggleButton = document.querySelector('.stores-submenu-toggle');
+  
+  if (!submenu || !toggleButton) return;
+  
+  // Check if submenu should be expanded based on current path or saved state
+  const isOnInventoryPage = window.location.pathname.includes('inventory-items');
+  const isOnWarehousePage = window.location.pathname.includes('warehouse-locations') || window.location.pathname.includes('warehouse-location-types');
+  const savedState = localStorage.getItem('stores-submenu-expanded');
+  const shouldExpand = isOnInventoryPage || isOnWarehousePage || savedState === 'true';
+  
+  if (shouldExpand) {
+    submenu.classList.remove('hidden');
+    toggleButton.querySelector('svg').style.transform = 'rotate(180deg)';
+  }
+  
+  // Add click event listener to toggle button
+  toggleButton.addEventListener('click', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const icon = this.querySelector('svg');
+    const isHidden = submenu.classList.contains('hidden');
+    
+    if (isHidden) {
+      submenu.classList.remove('hidden');
+      icon.style.transform = 'rotate(180deg)';
+      localStorage.setItem('stores-submenu-expanded', 'true');
+    } else {
+      submenu.classList.add('hidden');
+      icon.style.transform = 'rotate(0deg)';
+      localStorage.setItem('stores-submenu-expanded', 'false');
+    }
+  });
+  
+  // Prevent Stores link from toggling submenu when clicking the toggle button
+  const storesLink = toggleButton.closest('.sidebar-link');
+  if (storesLink) {
+    storesLink.addEventListener('click', function(e) {
+      // Only prevent default if clicking on the toggle button area
+      if (e.target.closest('.stores-submenu-toggle')) {
+        e.preventDefault();
+      }
+    });
+  }
 }
 
 export default initMaterials;

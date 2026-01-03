@@ -1,0 +1,111 @@
+<div class="px-4 sm:px-0">
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 sm:mb-6 gap-4">
+    <div class="flex-1">
+      <h1 class="text-2xl sm:text-3xl font-bold text-gray-900">
+        <% if @material %>
+          Inventory: <%= @material.material_code %>
+        <% else %>
+          Inventory Items
+        <% end %>
+      </h1>
+      <p class="mt-1 sm:mt-2 text-sm text-gray-500">Manage inventory items for materials.</p>
+    </div>
+    <div class="flex-shrink-0">
+      <% if can? :create, InventoryItem %>
+        <% if @material %>
+          <%= link_to new_material_inventory_item_path(@material), class: "inline-flex items-center justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-colors" do %>
+            <svg class="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+            </svg>
+            Add Inventory
+          <% end %>
+        <% else %>
+          <%= link_to new_inventory_item_path, class: "inline-flex items-center justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-colors" do %>
+            <svg class="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+            </svg>
+            Add Inventory
+          <% end %>
+        <% end %>
+        <%= link_to download_csv_template_inventory_items_path, class: "ml-2 inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50" do %>
+          Download CSV Template
+        <% end %>
+      <% end %>
+      <% if @material %>
+        <%= link_to @material, class: "ml-2 inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50" do %>
+          Back to Material
+        <% end %>
+      <% end %>
+    </div>
+  </div>
+
+  <!-- Search and Filter -->
+  <div class="bg-white shadow sm:rounded-lg mb-6 p-4">
+    <%= form_with url: @material ? material_inventory_items_path(@material) : inventory_items_path, method: :get, local: true, class: "space-y-3 sm:space-y-0 sm:flex sm:flex-wrap sm:gap-4" do |form| %>
+      <div class="flex-1 min-w-0 sm:min-w-[200px]">
+        <%= form.text_field :search, value: params[:search], placeholder: "Search by serial/batch number...", 
+            class: "shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md" %>
+      </div>
+      <div class="flex gap-2 sm:flex-none">
+        <button type="submit" class="flex-1 sm:flex-none inline-flex items-center justify-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700">
+          Search
+        </button>
+        <% if params[:search].present? %>
+          <%= link_to "Clear", @material ? material_inventory_items_path(@material) : inventory_items_path, class: "flex-1 sm:flex-none inline-flex items-center justify-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50" %>
+        <% end %>
+      </div>
+    <% end %>
+  </div>
+
+  <!-- CSV Upload -->
+  <% if can? :create, InventoryItem %>
+    <div class="bg-white shadow sm:rounded-lg mb-6 p-4">
+      <h3 class="text-lg font-medium text-gray-900 mb-4">Batch Upload</h3>
+      <%= form_with url: upload_csv_inventory_items_path, method: :post, multipart: true, local: true, class: "space-y-4" do |form| %>
+        <div>
+          <%= form.file_field :csv_file, accept: ".csv", class: "block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100" %>
+        </div>
+        <div>
+          <%= form.submit "Upload CSV", class: "inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700" %>
+        </div>
+      <% end %>
+    </div>
+  <% end %>
+
+  <div id="inventory-items-container">
+    <% if @inventory_items.any? %>
+      <div class="bg-white shadow overflow-hidden sm:rounded-md">
+        <ul class="divide-y divide-gray-200">
+          <% @inventory_items.each do |item| %>
+            <%= render 'inventory_item', item: item %>
+          <% end %>
+        </ul>
+      </div>
+      <div class="mt-4">
+        <%= paginate @inventory_items %>
+      </div>
+    <% else %>
+      <div class="bg-white shadow rounded-lg p-12 text-center">
+        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+        </svg>
+        <h3 class="mt-2 text-sm font-medium text-gray-900">No inventory items</h3>
+        <p class="mt-1 text-sm text-gray-500">Get started by adding inventory items.</p>
+        <% if can? :create, InventoryItem %>
+          <div class="mt-6">
+            <% if @material %>
+              <%= link_to new_material_inventory_item_path(@material), class: "inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700" do %>
+                Add Inventory
+              <% end %>
+            <% else %>
+              <%= link_to new_inventory_item_path, class: "inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700" do %>
+                Add Inventory
+              <% end %>
+            <% end %>
+          </div>
+        <% end %>
+      </div>
+    <% end %>
+  </div>
+</div>
+

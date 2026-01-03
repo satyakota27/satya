@@ -98,6 +98,12 @@ class MaterialsController < ApplicationController
     @bom_components = @material.material_bom_components.includes(:component_material) if @material.has_bom
     @material_quality_tests = @material.material_quality_tests.includes(:quality_test)
     @material_process_steps = @material.material_process_steps.includes(:process_step)
+    @inventory_items = @material.inventory_items.includes(:warehouse_location, :created_by) if @material.approved?
+    
+    respond_to do |format|
+      format.html
+      format.json { render json: { id: @material.id, material_code: @material.material_code, description: @material.description, tracking_type: @material.tracking_type, state: @material.state } }
+    end
   end
 
   def new

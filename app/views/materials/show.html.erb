@@ -358,6 +358,44 @@
           </div>
         </div>
       <% end %>
+
+      <% if @material.approved? && can?(:read, InventoryItem) %>
+        <div class="mt-8 pt-8 border-t border-gray-200">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-medium text-gray-900">
+              Inventory
+              <span class="text-sm font-normal text-gray-500">(<%= @material.inventory_count %> total)</span>
+            </h3>
+            <% if can? :create, InventoryItem %>
+              <%= link_to new_material_inventory_item_path(@material), class: "inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700" do %>
+                <svg class="-ml-1 mr-1 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                </svg>
+                Add Inventory
+              <% end %>
+            <% end %>
+          </div>
+          <% if @material.inventory_items.any? %>
+            <div class="bg-gray-50 rounded-lg p-4">
+              <p class="text-sm text-gray-600 mb-3">
+                <%= pluralize(@material.inventory_items.count, 'inventory item') %> with total quantity of <%= @material.inventory_count %>.
+              </p>
+              <%= link_to material_inventory_items_path(@material), class: "text-sm font-medium text-indigo-600 hover:text-indigo-900" do %>
+                View all inventory items →
+              <% end %>
+            </div>
+          <% else %>
+            <div class="bg-gray-50 rounded-lg p-4 text-center">
+              <p class="text-sm text-gray-500 mb-3">No inventory items yet.</p>
+              <% if can? :create, InventoryItem %>
+                <%= link_to new_material_inventory_item_path(@material), class: "inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700" do %>
+                  Add First Inventory Item
+                <% end %>
+              <% end %>
+            </div>
+          <% end %>
+        </div>
+      <% end %>
     </div>
   </div>
 </div>

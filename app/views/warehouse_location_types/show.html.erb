@@ -1,0 +1,71 @@
+<div class="px-4 sm:px-0">
+  <div class="sm:flex sm:items-center mb-6">
+    <div class="sm:flex-auto">
+      <h1 class="text-3xl font-bold text-gray-900"><%= @warehouse_location_type.name %></h1>
+      <p class="mt-2 text-sm text-gray-500">Location type details and associated locations.</p>
+    </div>
+    <div class="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
+      <% if can? :update, @warehouse_location_type %>
+        <%= link_to edit_warehouse_location_type_path(@warehouse_location_type), class: "inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50" do %>
+          Edit
+        <% end %>
+      <% end %>
+      <%= link_to warehouse_location_types_path, class: "ml-2 inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50" do %>
+        Back to Types
+      <% end %>
+    </div>
+  </div>
+
+  <div class="bg-white shadow overflow-hidden sm:rounded-lg mb-6">
+    <div class="px-4 py-5 sm:p-6">
+      <dl class="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2">
+        <div>
+          <dt class="text-sm font-medium text-gray-500">Name</dt>
+          <dd class="mt-1 text-sm text-gray-900"><%= @warehouse_location_type.name %></dd>
+        </div>
+        <div>
+          <dt class="text-sm font-medium text-gray-500">Code</dt>
+          <dd class="mt-1 text-sm text-gray-900 font-mono"><%= @warehouse_location_type.code %></dd>
+        </div>
+        <div>
+          <dt class="text-sm font-medium text-gray-500">Display Order</dt>
+          <dd class="mt-1 text-sm text-gray-900"><%= @warehouse_location_type.display_order %></dd>
+        </div>
+        <div>
+          <dt class="text-sm font-medium text-gray-500">Status</dt>
+          <dd class="mt-1">
+            <% if @warehouse_location_type.active? %>
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                Active
+              </span>
+            <% else %>
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                Inactive
+              </span>
+            <% end %>
+          </dd>
+        </div>
+      </dl>
+    </div>
+  </div>
+
+  <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+    <div class="px-4 py-5 sm:p-6">
+      <h3 class="text-lg font-medium text-gray-900 mb-4">Locations Using This Type</h3>
+      <% if @warehouse_locations.any? %>
+        <ul class="divide-y divide-gray-200">
+          <% @warehouse_locations.each do |location| %>
+            <li class="py-3">
+              <%= link_to location, class: "text-sm font-medium text-indigo-600 hover:text-indigo-900" do %>
+                <%= location.name %> (<%= location.location_code %>)
+              <% end %>
+            </li>
+          <% end %>
+        </ul>
+      <% else %>
+        <p class="text-sm text-gray-500">No locations use this type yet.</p>
+      <% end %>
+    </div>
+  </div>
+</div>
+

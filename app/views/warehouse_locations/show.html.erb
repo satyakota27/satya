@@ -1,0 +1,103 @@
+<div class="px-4 sm:px-0">
+  <div class="sm:flex sm:items-center mb-6">
+    <div class="sm:flex-auto">
+      <h1 class="text-3xl font-bold text-gray-900"><%= @warehouse_location.name %></h1>
+      <p class="mt-2 text-sm text-gray-500">Location: <span class="font-mono"><%= @warehouse_location.full_path %></span></p>
+    </div>
+    <div class="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
+      <% if can? :update, @warehouse_location %>
+        <%= link_to edit_warehouse_location_path(@warehouse_location), class: "inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50" do %>
+          Edit
+        <% end %>
+      <% end %>
+      <%= link_to warehouse_locations_path, class: "ml-2 inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50" do %>
+        Back to Locations
+      <% end %>
+    </div>
+  </div>
+
+  <div class="bg-white shadow overflow-hidden sm:rounded-lg mb-6">
+    <div class="px-4 py-5 sm:p-6">
+      <dl class="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2">
+        <div>
+          <dt class="text-sm font-medium text-gray-500">Name</dt>
+          <dd class="mt-1 text-sm text-gray-900"><%= @warehouse_location.name %></dd>
+        </div>
+        <div>
+          <dt class="text-sm font-medium text-gray-500">Code</dt>
+          <dd class="mt-1 text-sm text-gray-900 font-mono"><%= @warehouse_location.location_code %></dd>
+        </div>
+        <div>
+          <dt class="text-sm font-medium text-gray-500">Type</dt>
+          <dd class="mt-1 text-sm text-gray-900"><%= @warehouse_location.warehouse_location_type.name %></dd>
+        </div>
+        <div>
+          <dt class="text-sm font-medium text-gray-500">Parent</dt>
+          <dd class="mt-1 text-sm text-gray-900">
+            <% if @warehouse_location.parent %>
+              <%= link_to @warehouse_location.parent.name, @warehouse_location.parent, class: "text-indigo-600 hover:text-indigo-900" %>
+            <% else %>
+              <span class="text-gray-400">Root location</span>
+            <% end %>
+          </dd>
+        </div>
+        <div>
+          <dt class="text-sm font-medium text-gray-500">Full Path</dt>
+          <dd class="mt-1 text-sm text-gray-900 font-mono"><%= @warehouse_location.full_path %></dd>
+        </div>
+        <div>
+          <dt class="text-sm font-medium text-gray-500">Status</dt>
+          <dd class="mt-1">
+            <% if @warehouse_location.active? %>
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                Active
+              </span>
+            <% else %>
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                Inactive
+              </span>
+            <% end %>
+          </dd>
+        </div>
+        <% if @warehouse_location.description.present? %>
+          <div class="sm:col-span-2">
+            <dt class="text-sm font-medium text-gray-500">Description</dt>
+            <dd class="mt-1 text-sm text-gray-900"><%= @warehouse_location.description %></dd>
+          </div>
+        <% end %>
+      </dl>
+    </div>
+  </div>
+
+  <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+    <div class="px-4 py-5 sm:p-6">
+      <h3 class="text-lg font-medium text-gray-900 mb-4">
+        Inventory Items
+        <span class="text-sm font-normal text-gray-500">(<%= @inventory_count %> total)</span>
+      </h3>
+      <% if @inventory_items.any? %>
+        <ul class="divide-y divide-gray-200">
+          <% @inventory_items.each do |item| %>
+            <li class="py-3">
+              <%= link_to item, class: "text-sm font-medium text-indigo-600 hover:text-indigo-900" do %>
+                <%= item.material.material_code %> - <%= item.material.description %>
+                <% if item.serial_number.present? %>
+                  <span class="text-gray-500">(SN: <%= item.serial_number %>)</span>
+                <% elsif item.batch_number.present? %>
+                  <span class="text-gray-500">(Batch: <%= item.batch_number %>)</span>
+                <% end %>
+                <span class="text-gray-500">- Qty: <%= item.quantity %></span>
+              <% end %>
+            </li>
+          <% end %>
+        </ul>
+        <% if @warehouse_location.inventory_items.count > 50 %>
+          <p class="mt-4 text-sm text-gray-500">Showing first 50 items. <%= link_to "View all", inventory_items_path(location_id: @warehouse_location.id), class: "text-indigo-600 hover:text-indigo-900" %></p>
+        <% end %>
+      <% else %>
+        <p class="text-sm text-gray-500">No inventory items at this location.</p>
+      <% end %>
+    </div>
+  </div>
+</div>
+

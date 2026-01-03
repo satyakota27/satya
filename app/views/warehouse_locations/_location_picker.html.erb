@@ -1,0 +1,546 @@
+<div class="location-picker">
+  <label class="block text-sm font-medium text-gray-700 mb-2">Warehouse Location</label>
+  <div class="flex items-center space-x-2">
+    <div class="relative flex-1">
+      <input type="hidden" name="<%= field_name %>" id="<%= field_id %>" value="<%= selected_location&.id %>">
+      <input type="text" 
+             id="<%= field_id %>_search" 
+             value="<%= selected_location ? "#{selected_location.location_code} - #{selected_location.name}" : '' %>" 
+             placeholder="Search by location code or name..."
+             autocomplete="off"
+             class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
+             data-field-id="<%= field_id %>"
+             data-search-url="<%= search_warehouse_locations_path %>">
+      <div id="<%= field_id %>_results" class="hidden absolute z-10 mt-1 w-full bg-white shadow-lg max-h-60 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none sm:text-sm">
+        <!-- Search results will be populated here -->
+      </div>
+    </div>
+    <% if false && can?(:create, WarehouseLocation) %>
+      <button type="button" 
+              id="<%= field_id %>_add_btn"
+              class="inline-flex items-center justify-center px-3 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              data-field-id="<%= field_id %>"
+              title="Create new warehouse location">
+        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+        </svg>
+      </button>
+    <% end %>
+  </div>
+  <p class="mt-1 text-xs text-gray-500">Start typing to search by location code or name</p>
+  
+  <!-- Create Location Modal -->
+  <div id="<%= field_id %>_create_modal" class="hidden fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    <!-- Backdrop -->
+    <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity modal-backdrop" data-modal-id="<%= field_id %>_create_modal"></div>
+    <!-- Modal Content -->
+    <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:p-0">
+      <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full relative z-10">
+        <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+          <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg leading-6 font-medium text-gray-900">Create New Warehouse Location</h3>
+            <button type="button" 
+                    class="text-gray-400 hover:text-gray-500 close-modal-btn"
+                    data-modal-id="<%= field_id %>_create_modal"
+                    aria-label="Close">
+              <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+          <div id="<%= field_id %>_create_form_container" class="max-h-96 overflow-y-auto">
+            <!-- Form will be loaded here via AJAX -->
+            <div class="text-center py-4">
+              <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+              <p class="mt-2 text-sm text-gray-500">Loading form...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  (function() {
+    var fieldId = '<%= field_id %>';
+    var searchField = document.getElementById(fieldId + '_search');
+    var hiddenField = document.getElementById(fieldId);
+    var resultsContainer = document.getElementById(fieldId + '_results');
+    var searchUrl = searchField.getAttribute('data-search-url');
+    var searchTimeout = null;
+    var selectedLocation = null;
+    
+    function initLocationSearch() {
+      if (!searchField || !resultsContainer) return;
+      
+      // Clear selection when user starts typing
+      searchField.addEventListener('input', function() {
+        clearTimeout(searchTimeout);
+        var query = this.value.trim();
+        
+        if (query.length < 2) {
+          resultsContainer.classList.add('hidden');
+          hiddenField.value = '';
+          selectedLocation = null;
+          return;
+        }
+        
+        searchTimeout = setTimeout(function() {
+          performSearch(query);
+        }, 300);
+      });
+      
+      // Handle focus
+      searchField.addEventListener('focus', function() {
+        var query = this.value.trim();
+        if (query.length >= 2 && resultsContainer.children.length > 0) {
+          resultsContainer.classList.remove('hidden');
+        }
+      });
+      
+      // Hide results when clicking outside
+      document.addEventListener('click', function(e) {
+        if (!searchField.contains(e.target) && !resultsContainer.contains(e.target)) {
+          resultsContainer.classList.add('hidden');
+        }
+      });
+      
+      // Handle keyboard navigation
+      searchField.addEventListener('keydown', function(e) {
+        var visibleResults = Array.from(resultsContainer.querySelectorAll('.location-result-item:not(.hidden)'));
+        var currentIndex = visibleResults.findIndex(item => item.classList.contains('bg-indigo-50'));
+        
+        if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          var nextIndex = currentIndex < visibleResults.length - 1 ? currentIndex + 1 : 0;
+          visibleResults.forEach((item, idx) => {
+            item.classList.toggle('bg-indigo-50', idx === nextIndex);
+          });
+        } else if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          var prevIndex = currentIndex > 0 ? currentIndex - 1 : visibleResults.length - 1;
+          visibleResults.forEach((item, idx) => {
+            item.classList.toggle('bg-indigo-50', idx === prevIndex);
+          });
+        } else if (e.key === 'Enter') {
+          e.preventDefault();
+          var selected = visibleResults.find(item => item.classList.contains('bg-indigo-50'));
+          if (selected) {
+            selected.click();
+          } else if (visibleResults.length > 0) {
+            visibleResults[0].click();
+          }
+        } else if (e.key === 'Escape') {
+          resultsContainer.classList.add('hidden');
+        }
+      });
+    }
+    
+    function performSearch(query) {
+      if (!query || query.length < 2) {
+        resultsContainer.classList.add('hidden');
+        return;
+      }
+      
+      fetch(searchUrl + '?q=' + encodeURIComponent(query), {
+        headers: {
+          'Accept': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest'
+        }
+      })
+      .then(response => response.json())
+      .then(data => {
+        displayResults(data);
+      })
+      .catch(error => {
+        console.error('Search error:', error);
+        resultsContainer.classList.add('hidden');
+      });
+    }
+    
+    function escapeHtml(text) {
+      if (!text) return '';
+      var div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+    
+    function displayResults(locations) {
+      if (!locations || locations.length === 0) {
+        resultsContainer.innerHTML = '<div class="px-4 py-2 text-sm text-gray-500">No locations found</div>';
+        resultsContainer.classList.remove('hidden');
+        return;
+      }
+      
+      resultsContainer.innerHTML = locations.map(function(loc) {
+        var code = escapeHtml(loc.code || '');
+        var name = escapeHtml(loc.name || '');
+        var path = escapeHtml(loc.path || '');
+        return '<div class="location-result-item px-4 py-2 hover:bg-gray-50 cursor-pointer" ' +
+               'data-location-id="' + loc.id + '" ' +
+               'data-location-code="' + code + '" ' +
+               'data-location-name="' + name + '" ' +
+               'data-location-path="' + path + '">' +
+               '<div class="text-sm font-medium text-gray-900">' + code + ' - ' + name + '</div>' +
+               '<div class="text-xs text-gray-500 font-mono">' + path + '</div>' +
+               '</div>';
+      }).join('');
+      
+      // Add click handlers to results
+      resultsContainer.querySelectorAll('.location-result-item').forEach(function(item) {
+        item.addEventListener('click', function() {
+          var locationId = this.getAttribute('data-location-id');
+          var locationCode = this.getAttribute('data-location-code');
+          var locationName = this.getAttribute('data-location-name');
+          var locationPath = this.getAttribute('data-location-path');
+          
+          hiddenField.value = locationId;
+          searchField.value = locationCode + ' - ' + locationName;
+          selectedLocation = {
+            id: locationId,
+            code: locationCode,
+            name: locationName,
+            path: locationPath
+          };
+          
+          resultsContainer.classList.add('hidden');
+        });
+      });
+      
+      resultsContainer.classList.remove('hidden');
+    }
+    
+    // Initialize
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initLocationSearch);
+    } else {
+      initLocationSearch();
+    }
+    
+    // Re-initialize on Turbo navigation
+    document.addEventListener('turbo:load', initLocationSearch);
+    document.addEventListener('turbo:frame-load', initLocationSearch);
+    
+    // Handle "+" button click to open create modal
+    var addBtn = document.getElementById(fieldId + '_add_btn');
+    var createModal = document.getElementById(fieldId + '_create_modal');
+    var formContainer = document.getElementById(fieldId + '_create_form_container');
+    
+    function initCreateModal() {
+      if (!addBtn || !createModal || !formContainer) return;
+      
+      // Remove any existing event listeners by cloning the button
+      var newAddBtn = addBtn.cloneNode(true);
+      addBtn.parentNode.replaceChild(newAddBtn, addBtn);
+      addBtn = newAddBtn;
+      
+      addBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        console.log('Plus button clicked, opening modal');
+        
+        // Show modal first
+        createModal.classList.remove('hidden');
+        console.log('Modal shown, loading form...');
+        
+        // Always reload the form to ensure fresh state
+        formContainer.innerHTML = '<div class="text-center py-4"><div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div><p class="mt-2 text-sm text-gray-500">Loading form...</p></div>';
+        delete formContainer.dataset.loaded;
+        
+        fetch('<%= new_warehouse_location_path %>', {
+          headers: {
+            'Accept': 'text/html',
+            'X-Requested-With': 'XMLHttpRequest'
+          },
+          credentials: 'same-origin'
+        })
+        .then(response => {
+          console.log('Response status:', response.status);
+          if (!response.ok) {
+            throw new Error('Network response was not ok: ' + response.status);
+          }
+          return response.text();
+        })
+        .then(html => {
+          console.log('Form HTML received, length:', html.length);
+          
+          // Extract just the form from the response
+          var parser = new DOMParser();
+          var doc = parser.parseFromString(html, 'text/html');
+          
+          // Look for the warehouse location form specifically
+          // The form should contain fields with names like "warehouse_location[location_code]"
+          var formElement = null;
+          var allForms = doc.querySelectorAll('form');
+          
+          console.log('Total forms found:', allForms.length);
+          
+          // First, try to find form with .bg-white.shadow inside it (our form structure)
+          // This is the most reliable indicator
+          for (var i = 0; i < allForms.length; i++) {
+            var form = allForms[i];
+            if (form.querySelector('.bg-white.shadow')) {
+              console.log('Found form with .bg-white.shadow at index', i, 'action:', form.action);
+              formElement = form;
+              break;
+            }
+          }
+          
+          // If not found, look for form that contains warehouse_location fields
+          if (!formElement) {
+            for (var i = 0; i < allForms.length; i++) {
+              var form = allForms[i];
+              // Check if this form has warehouse_location fields
+              var hasWarehouseFields = form.querySelector('[name*="warehouse_location"]') ||
+                                       form.querySelector('[name*="warehouse_location_type_id"]') ||
+                                       form.querySelector('[name*="location_code"]');
+              
+              // Also check if form action contains warehouse
+              var hasWarehouseAction = form.action && form.action.includes('warehouse');
+              
+              if (hasWarehouseFields || hasWarehouseAction) {
+                console.log('Found warehouse location form at index', i, 'action:', form.action);
+                formElement = form;
+                break;
+              }
+            }
+          }
+          
+          // Log all forms for debugging
+          if (!formElement) {
+            console.log('Form not found, listing all forms:');
+            for (var i = 0; i < allForms.length; i++) {
+              console.log('Form', i, 'action:', allForms[i].action, 'method:', allForms[i].method, 'has .bg-white.shadow:', !!allForms[i].querySelector('.bg-white.shadow'));
+            }
+          }
+          
+          if (formElement) {
+            console.log('Form element found, action:', formElement.action);
+            // The form element wraps the .bg-white.shadow div
+            // So we need to use the form element itself, not its parent
+            var htmlToInsert = formElement.outerHTML;
+            console.log('Using form element directly, HTML length:', htmlToInsert.length);
+            
+            // Insert the HTML
+            formContainer.innerHTML = htmlToInsert;
+            formContainer.dataset.loaded = 'true';
+            
+            // Find the form - it should be the first (and only) child of formContainer
+            var form = formContainer.querySelector('form');
+            
+            if (form) {
+              console.log('Form found in container, attaching submit handler');
+              // Update form action to use the correct route if needed
+              if (!form.action || form.action === '') {
+                form.action = '<%= warehouse_locations_path %>';
+              }
+              form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                handleLocationCreate(form, fieldId);
+              });
+            } else {
+              console.error('Form not found in container after loading');
+              console.log('Container children:', formContainer.children.length);
+              console.log('Container HTML preview:', formContainer.innerHTML.substring(0, 500));
+              // Try one more time with a different approach
+              var allForms = formContainer.getElementsByTagName('form');
+              if (allForms.length > 0) {
+                form = allForms[0];
+                console.log('Form found via getElementsByTagName');
+                form.addEventListener('submit', function(e) {
+                  e.preventDefault();
+                  handleLocationCreate(form, fieldId);
+                });
+              } else {
+                formContainer.innerHTML = '<div class="text-red-600 p-4">Form element not found after parsing. Please refresh and try again.</div>';
+              }
+            }
+          } else {
+            // Fallback: try to find form in a different way or use full HTML
+            console.log('Form element not found in parsed doc, trying alternative extraction');
+            var formWrapper = doc.querySelector('.bg-white.shadow');
+            var htmlToInsert;
+            
+            if (formWrapper) {
+              console.log('Found form wrapper, inserting into container');
+              htmlToInsert = formWrapper.outerHTML;
+            } else {
+              // Try to extract just the form from the body
+              var bodyContent = doc.body ? doc.body.innerHTML : html;
+              console.log('Using body content, length:', bodyContent.length);
+              htmlToInsert = bodyContent;
+            }
+            
+            formContainer.innerHTML = htmlToInsert;
+            formContainer.dataset.loaded = 'true';
+            
+            // Find the form after insertion
+            var form = formContainer.querySelector('form');
+            if (!form) {
+              // Try finding it in the first child
+              var firstChild = formContainer.firstElementChild;
+              if (firstChild) {
+                form = firstChild.querySelector('form');
+              }
+            }
+            
+            if (form) {
+              console.log('Form found in fallback HTML, attaching submit handler');
+              form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                handleLocationCreate(form, fieldId);
+              });
+            } else {
+              console.error('Form not found in fallback HTML');
+              console.log('Container HTML:', formContainer.innerHTML.substring(0, 1000));
+              formContainer.innerHTML = '<div class="text-red-600 p-4">Form not found in response. Please check the browser console for details.</div>';
+            }
+          }
+        })
+        .catch(error => {
+          console.error('Error loading form:', error);
+          formContainer.innerHTML = '<div class="text-red-600 p-4">Error loading form: ' + error.message + '. Please check the console for details and try again.</div>';
+        });
+      });
+    }
+    
+    function handleLocationCreate(form, targetFieldId) {
+      var formData = new FormData(form);
+      var submitBtn = form.querySelector('input[type="submit"]');
+      var originalText = submitBtn ? submitBtn.value : 'Save Location';
+      
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.value = 'Creating...';
+      }
+      
+      fetch(form.action, {
+        method: 'POST',
+        body: formData,
+        headers: {
+          'Accept': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest',
+          'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content
+        }
+      })
+      .then(response => {
+        if (response.ok) {
+          return response.json();
+        } else {
+          return response.json().then(data => {
+            throw new Error(data.errors ? data.errors.join(', ') : 'Failed to create location');
+          });
+        }
+      })
+      .then(data => {
+        if (data.success && data.location) {
+          // Select the newly created location
+          var hiddenField = document.getElementById(targetFieldId);
+          var searchField = document.getElementById(targetFieldId + '_search');
+          
+          if (hiddenField) hiddenField.value = data.location.id;
+          if (searchField) searchField.value = data.location.code + ' - ' + data.location.name;
+          
+          // Close modal
+          var modal = document.getElementById(targetFieldId + '_create_modal');
+          if (modal) modal.classList.add('hidden');
+          
+          // Reset form container for next use
+          formContainer.innerHTML = '';
+          delete formContainer.dataset.loaded;
+        } else {
+          throw new Error(data.errors ? data.errors.join(', ') : 'Failed to create location');
+        }
+      })
+      .catch(error => {
+        console.error('Error creating location:', error);
+        // Show errors in the form - Rails will render errors in the form partial
+        // We need to reload the form to show validation errors
+        fetch(form.action, {
+          method: 'POST',
+          body: formData,
+          headers: {
+            'Accept': 'text/html',
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content
+          }
+        })
+        .then(response => response.text())
+        .then(html => {
+          formContainer.innerHTML = html;
+          var newForm = formContainer.querySelector('form');
+          if (newForm) {
+            newForm.addEventListener('submit', function(e) {
+              e.preventDefault();
+              handleLocationCreate(newForm, targetFieldId);
+            });
+          }
+        })
+        .catch(err => {
+          console.error('Error reloading form:', err);
+        });
+        
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.value = originalText;
+        }
+      });
+    }
+    
+    // Close modal handlers
+    function setupModalCloseHandlers() {
+      var backdrop = createModal ? createModal.querySelector('.modal-backdrop') : null;
+      var closeBtn = createModal ? createModal.querySelector('.close-modal-btn') : null;
+      
+      if (backdrop) {
+        backdrop.addEventListener('click', function() {
+          createModal.classList.add('hidden');
+          // Reset form container
+          if (formContainer) {
+            formContainer.innerHTML = '<div class="text-center py-4"><div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div><p class="mt-2 text-sm text-gray-500">Loading form...</p></div>';
+            delete formContainer.dataset.loaded;
+          }
+        });
+      }
+      
+      if (closeBtn) {
+        closeBtn.addEventListener('click', function() {
+          createModal.classList.add('hidden');
+          // Reset form container
+          if (formContainer) {
+            formContainer.innerHTML = '<div class="text-center py-4"><div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div><p class="mt-2 text-sm text-gray-500">Loading form...</p></div>';
+            delete formContainer.dataset.loaded;
+          }
+        });
+      }
+    }
+    
+    // Initialize create modal
+    function initializeModal() {
+      // Re-get elements in case DOM changed
+      addBtn = document.getElementById(fieldId + '_add_btn');
+      createModal = document.getElementById(fieldId + '_create_modal');
+      formContainer = document.getElementById(fieldId + '_create_form_container');
+      
+      if (addBtn && createModal && formContainer) {
+        initCreateModal();
+        setupModalCloseHandlers();
+      } else {
+        console.warn('Modal elements not found for field:', fieldId);
+      }
+    }
+    
+    // Initialize immediately if elements exist
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initializeModal);
+    } else {
+      initializeModal();
+    }
+    
+    // Re-initialize on Turbo navigation
+    document.addEventListener('turbo:load', initializeModal);
+    document.addEventListener('turbo:frame-load', initializeModal);
+  })();
+</script>

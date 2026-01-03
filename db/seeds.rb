@@ -227,6 +227,13 @@ SubFunctionality.find_or_create_by!(functionality: store_mgmt, code: 'enable_dis
   sf.active = true
 end
 
+SubFunctionality.find_or_create_by!(functionality: store_mgmt, code: 'manage_inventory') do |sf|
+  sf.name = 'Manage inventory'
+  sf.screen = 'Inventory management screen'
+  sf.display_order = 4
+  sf.active = true
+end
+
 # Master tables management
 master_tables = Functionality.find_or_create_by!(code: 'master_tables_management') do |f|
   f.name = 'Master tables management'
@@ -404,6 +411,15 @@ end
 
 puts "Functionalities and sub-functionalities created successfully!"
 
+puts "\nSeed data created successfully!"
+
+# Load additional seed files
+Dir[File.join(__dir__, 'seeds', '*.rb')].sort.each do |seed_file|
+  puts "\n" + "="*50
+  load seed_file
+end
+
+puts "\n" + "="*50
 puts "\nSeed data created successfully!"
 puts "\nYou can now login with:"
 puts "  Super Admin: admin1@example.com / password123"

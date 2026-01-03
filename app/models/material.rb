@@ -15,6 +15,7 @@ class Material < ApplicationRecord
   has_many :quality_tests, through: :material_quality_tests
   has_many :material_process_steps, dependent: :destroy
   has_many :process_steps, through: :material_process_steps
+  has_many :inventory_items, dependent: :destroy
 
   enum :state, { draft: 'draft', rejected: 'rejected', approved: 'approved' }
   
@@ -60,6 +61,14 @@ class Material < ApplicationRecord
   
   def can_be_updated_by_creator?
     draft? || rejected?
+  end
+
+  def inventory_count
+    inventory_items.sum(:quantity)
+  end
+
+  def material_code_with_description
+    "#{material_code || 'Draft'} - #{description}"
   end
 
   before_save :generate_material_code, if: :should_generate_code?

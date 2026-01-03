@@ -1,0 +1,15 @@
+<div class="px-4 sm:px-0">
+  <div class="mb-6">
+    <h1 class="text-3xl font-bold text-gray-900">
+      <% if @material %>
+        Add Inventory: <%= @material.material_code %>
+      <% else %>
+        New Inventory Item
+      <% end %>
+    </h1>
+    <p class="mt-2 text-sm text-gray-500">Add a new inventory item to the system.</p>
+  </div>
+
+  <%= render 'form' %>
+</div>
+

@@ -1,0 +1,109 @@
+<div class="px-4 sm:px-0">
+  <div class="sm:flex sm:items-center mb-6">
+    <div class="sm:flex-auto">
+      <h1 class="text-3xl font-bold text-gray-900">Inventory Item</h1>
+      <p class="mt-2 text-sm text-gray-500">Details for inventory item.</p>
+    </div>
+    <div class="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
+      <% if can? :update, @inventory_item %>
+        <%= link_to edit_inventory_item_path(@inventory_item), class: "inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50" do %>
+          Edit
+        <% end %>
+      <% end %>
+      <%= link_to @inventory_item.material, class: "ml-2 inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50" do %>
+        Material
+      <% end %>
+      <%= link_to inventory_items_path, class: "ml-2 inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50" do %>
+        All Inventory
+      <% end %>
+    </div>
+  </div>
+
+  <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+    <div class="px-4 py-5 sm:p-6">
+      <dl class="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2">
+        <div>
+          <dt class="text-sm font-medium text-gray-500">Material</dt>
+          <dd class="mt-1 text-sm text-gray-900">
+            <%= link_to "#{@inventory_item.material.material_code} - #{@inventory_item.material.description}", @inventory_item.material, class: "text-indigo-600 hover:text-indigo-900" %>
+          </dd>
+        </div>
+        <div>
+          <dt class="text-sm font-medium text-gray-500">Quantity</dt>
+          <dd class="mt-1 text-sm text-gray-900 font-semibold"><%= @inventory_item.quantity %></dd>
+        </div>
+        <% if @inventory_item.serial_number.present? %>
+          <div>
+            <dt class="text-sm font-medium text-gray-500">Serial Number</dt>
+            <dd class="mt-1 text-sm text-gray-900 font-mono"><%= @inventory_item.serial_number %></dd>
+          </div>
+        <% end %>
+        <% if @inventory_item.batch_number.present? %>
+          <div>
+            <dt class="text-sm font-medium text-gray-500">Batch Number</dt>
+            <dd class="mt-1 text-sm text-gray-900 font-mono"><%= @inventory_item.batch_number %></dd>
+          </div>
+        <% end %>
+        <% if @inventory_item.warehouse_location.present? %>
+          <div class="sm:col-span-2">
+            <dt class="text-sm font-medium text-gray-500">Location</dt>
+            <dd class="mt-1 text-sm text-gray-900">
+              <%= link_to @inventory_item.warehouse_location.full_path, @inventory_item.warehouse_location, class: "font-mono text-indigo-600 hover:text-indigo-900" %>
+            </dd>
+          </div>
+        <% end %>
+        <% if @inventory_item.legacy_serial_id.present? %>
+          <div>
+            <dt class="text-sm font-medium text-gray-500">Legacy Serial ID</dt>
+            <dd class="mt-1 text-sm text-gray-900 font-mono"><%= @inventory_item.legacy_serial_id %></dd>
+          </div>
+        <% end %>
+        <% if @inventory_item.legacy_batch_number.present? %>
+          <div>
+            <dt class="text-sm font-medium text-gray-500">Legacy Batch Number</dt>
+            <dd class="mt-1 text-sm text-gray-900 font-mono"><%= @inventory_item.legacy_batch_number %></dd>
+          </div>
+        <% end %>
+        <% if @inventory_item.purchase_date.present? %>
+          <div>
+            <dt class="text-sm font-medium text-gray-500">Purchase Date</dt>
+            <dd class="mt-1 text-sm text-gray-900"><%= @inventory_item.purchase_date.strftime("%B %d, %Y") %></dd>
+          </div>
+        <% end %>
+        <% if @inventory_item.expiry_date.present? %>
+          <div>
+            <dt class="text-sm font-medium text-gray-500">Expiry Date</dt>
+            <dd class="mt-1 text-sm text-gray-900"><%= @inventory_item.expiry_date.strftime("%B %d, %Y") %></dd>
+          </div>
+        <% end %>
+        <% if @inventory_item.cost.present? %>
+          <div>
+            <dt class="text-sm font-medium text-gray-500">Cost</dt>
+            <dd class="mt-1 text-sm text-gray-900">$<%= sprintf("%.2f", @inventory_item.cost) %></dd>
+          </div>
+        <% end %>
+        <% if @inventory_item.supplier.present? %>
+          <div>
+            <dt class="text-sm font-medium text-gray-500">Supplier</dt>
+            <dd class="mt-1 text-sm text-gray-900"><%= @inventory_item.supplier %></dd>
+          </div>
+        <% end %>
+        <% if @inventory_item.notes.present? %>
+          <div class="sm:col-span-2">
+            <dt class="text-sm font-medium text-gray-500">Notes</dt>
+            <dd class="mt-1 text-sm text-gray-900"><%= simple_format(@inventory_item.notes) %></dd>
+          </div>
+        <% end %>
+        <div>
+          <dt class="text-sm font-medium text-gray-500">Created By</dt>
+          <dd class="mt-1 text-sm text-gray-900"><%= @inventory_item.created_by&.email || 'System' %></dd>
+        </div>
+        <div>
+          <dt class="text-sm font-medium text-gray-500">Created At</dt>
+          <dd class="mt-1 text-sm text-gray-900"><%= @inventory_item.created_at.strftime("%B %d, %Y at %I:%M %p") %></dd>
+        </div>
+      </dl>
+    </div>
+  </div>
+</div>
+

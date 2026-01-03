@@ -28,6 +28,7 @@ Rails.application.routes.draw do
     resources :material_quality_tests, only: [:index, :create, :destroy]
     resources :material_process_steps, only: [:index, :create, :destroy]
     resources :unit_of_measurements, path: 'unit-of-measurements'
+    resources :inventory_items, only: [:index, :new, :create]
   end
   
   # Standalone route for unit of measurements index (for sidebar access)
@@ -53,6 +54,28 @@ Rails.application.routes.draw do
     collection do
       post :upload_document_new
       get :search
+    end
+  end
+
+  # Inventory Items routes
+  resources :inventory_items do
+    collection do
+      post :upload_csv
+      get :download_csv_template
+    end
+  end
+
+  # Warehouse Location Types routes
+  resources :warehouse_location_types, path: 'warehouse-location-types'
+
+  # Warehouse Locations routes
+  resources :warehouse_locations, path: 'warehouse-locations' do
+    collection do
+      get :tree
+      get :search
+    end
+    member do
+      get :children
     end
   end
 

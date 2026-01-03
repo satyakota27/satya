@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_12_31_181252) do
+ActiveRecord::Schema[8.0].define(version: 2026_01_02_131354) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -54,6 +54,31 @@ ActiveRecord::Schema[8.0].define(version: 2025_12_31_181252) do
     t.index ["active"], name: "index_functionalities_on_active"
     t.index ["code"], name: "index_functionalities_on_code", unique: true
     t.index ["display_order"], name: "index_functionalities_on_display_order"
+  end
+
+  create_table "inventory_items", force: :cascade do |t|
+    t.bigint "material_id", null: false
+    t.bigint "warehouse_location_id"
+    t.bigint "tenant_id", null: false
+    t.bigint "created_by_id"
+    t.string "serial_number"
+    t.string "batch_number"
+    t.integer "quantity", default: 1
+    t.string "legacy_serial_id"
+    t.string "legacy_batch_number"
+    t.text "notes"
+    t.date "purchase_date"
+    t.date "expiry_date"
+    t.decimal "cost", precision: 10, scale: 2
+    t.string "supplier"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["created_by_id"], name: "index_inventory_items_on_created_by_id"
+    t.index ["material_id", "batch_number"], name: "index_inventory_items_on_material_and_batch", unique: true, where: "(batch_number IS NOT NULL)"
+    t.index ["material_id", "serial_number"], name: "index_inventory_items_on_material_and_serial", unique: true, where: "(serial_number IS NOT NULL)"
+    t.index ["material_id"], name: "index_inventory_items_on_material_id"
+    t.index ["tenant_id"], name: "index_inventory_items_on_tenant_id"
+    t.index ["warehouse_location_id"], name: "index_inventory_items_on_warehouse_location_id"
   end
 
   create_table "material_bom_components", force: :cascade do |t|
@@ -236,8 +261,42 @@ ActiveRecord::Schema[8.0].define(version: 2025_12_31_181252) do
     t.index ["tenant_id"], name: "index_users_on_tenant_id"
   end
 
+  create_table "warehouse_location_types", force: :cascade do |t|
+    t.bigint "tenant_id", null: false
+    t.string "name", null: false
+    t.string "code", null: false
+    t.integer "display_order", default: 0
+    t.boolean "active", default: true, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["tenant_id", "code"], name: "index_warehouse_location_types_on_tenant_id_and_code", unique: true
+    t.index ["tenant_id", "display_order"], name: "index_warehouse_location_types_on_tenant_id_and_display_order"
+    t.index ["tenant_id"], name: "index_warehouse_location_types_on_tenant_id"
+  end
+
+  create_table "warehouse_locations", force: :cascade do |t|
+    t.bigint "tenant_id", null: false
+    t.bigint "warehouse_location_type_id", null: false
+    t.bigint "parent_id"
+    t.string "location_code", null: false
+    t.string "name", null: false
+    t.text "description"
+    t.boolean "active", default: true, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["parent_id", "warehouse_location_type_id", "location_code"], name: "index_warehouse_locations_on_parent_type_code", unique: true
+    t.index ["parent_id"], name: "index_warehouse_locations_on_parent_id"
+    t.index ["tenant_id", "parent_id"], name: "index_warehouse_locations_on_tenant_id_and_parent_id"
+    t.index ["tenant_id"], name: "index_warehouse_locations_on_tenant_id"
+    t.index ["warehouse_location_type_id"], name: "index_warehouse_locations_on_warehouse_location_type_id"
+  end
+
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
+  add_foreign_key "inventory_items", "materials"
+  add_foreign_key "inventory_items", "tenants"
+  add_foreign_key "inventory_items", "users", column: "created_by_id"
+  add_foreign_key "inventory_items", "warehouse_locations"
   add_foreign_key "material_bom_components", "materials"
   add_foreign_key "material_bom_components", "materials", column: "component_material_id"
   add_foreign_key "material_process_steps", "materials"
@@ -257,4 +316,8 @@ ActiveRecord::Schema[8.0].define(version: 2025_12_31_181252) do
   add_foreign_key "user_permissions", "sub_functionalities"
   add_foreign_key "user_permissions", "users"
   add_foreign_key "users", "tenants"
+  add_foreign_key "warehouse_location_types", "tenants"
+  add_foreign_key "warehouse_locations", "tenants"
+  add_foreign_key "warehouse_locations", "warehouse_location_types"
+  add_foreign_key "warehouse_locations", "warehouse_locations", column: "parent_id"
 end

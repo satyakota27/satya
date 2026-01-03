@@ -28,6 +28,9 @@ gem "cancancan"
 # Multi-tenancy
 gem "acts_as_tenant"
 
+# CSV processing (required for Ruby 3.4+)
+gem "csv"
+
 # Pagination
 gem "kaminari"
 
@@ -63,6 +66,9 @@ group :development, :test do
 
   # Omakase Ruby styling [https://github.com/rails/rubocop-rails-omakase/]
   gem "rubocop-rails-omakase", require: false
+  
+  # Fake data generation for seeds and tests
+  gem "faker", require: false
 end
 
 group :development do

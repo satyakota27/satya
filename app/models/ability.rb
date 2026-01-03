@@ -167,5 +167,59 @@ class Ability
       # Super admins can manage all process steps
       can :manage, ProcessStep if user.super_admin?
     end
+
+    # Store Management permissions
+    if user.has_functionality?('store_management')
+      # Inventory Item permissions
+      if user.super_admin?
+        can :read, InventoryItem
+        can :create, InventoryItem
+        can :update, InventoryItem
+        can :destroy, InventoryItem
+      else
+        can :read, InventoryItem, tenant_id: user.tenant_id
+        can :create, InventoryItem
+        can :update, InventoryItem, tenant_id: user.tenant_id
+        can :destroy, InventoryItem, tenant_id: user.tenant_id
+      end
+
+      # Warehouse Location permissions
+      if user.super_admin?
+        can :read, WarehouseLocation
+        if user.has_permission?('create_warehouse')
+          can :create, WarehouseLocation
+          can :update, WarehouseLocation
+          can :destroy, WarehouseLocation do |location|
+            location.children.empty? && location.inventory_items.empty?
+          end
+        end
+      else
+        can :read, WarehouseLocation, tenant_id: user.tenant_id
+        if user.has_permission?('create_warehouse')
+          can :create, WarehouseLocation
+          can :update, WarehouseLocation, tenant_id: user.tenant_id
+          can :destroy, WarehouseLocation do |location|
+            location.tenant_id == user.tenant_id && location.children.empty? && location.inventory_items.empty?
+          end
+        end
+      end
+
+      # Warehouse Location Type permissions
+      if user.super_admin?
+        can :read, WarehouseLocationType
+        if user.has_permission?('create_warehouse')
+          can :manage, WarehouseLocationType
+        end
+      else
+        can :read, WarehouseLocationType, tenant_id: user.tenant_id
+        if user.has_permission?('create_warehouse')
+          can :create, WarehouseLocationType
+          can :update, WarehouseLocationType, tenant_id: user.tenant_id
+          can :destroy, WarehouseLocationType do |type|
+            type.tenant_id == user.tenant_id && type.warehouse_locations.empty?
+          end
+        end
+      end
+    end
   end
 end
